@@ -1,0 +1,2 @@
+-define(GADGETINAKA, "gadgetinaka").
+-define(WEBHOOK_URL, <<"http://gadget.inakalabs.com/webhook">>).

@@ -1,0 +1,9 @@
+<div id="header">
+     <a href="/">
+       <img src="/assets/img/logo.png"/ border="0">
+     </a>
+     <div class="name">
+          <h1>Elvis</h1>
+          <blockquote>You ain't nothing but a hound dog...</blockquote>
+     </div>
+</div>

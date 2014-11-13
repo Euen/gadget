@@ -1,0 +1,24 @@
+{% extends "base.dtl" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+Elvis is a style checker for Erlang inspired in <a href="https://houndci.com/">Hound CI</a>.
+
+<ol class="steps">
+  <li>
+    <button id="login">Sign in with GitHub</button>
+  </li>
+  <li>
+    Activate Elvis for your GitHub repositories.
+  </li>
+  <li>
+    When pull requests are created or modified Elvis will review your code and
+    add comments to it.
+  </li>
+  <li>
+    Check the comments and fix your code accordingly.
+  </li>
+</ol>
+
+{% endblock %}

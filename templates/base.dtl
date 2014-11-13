@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{% block title %}Home{% endblock %} - Elvis CI</title>
+    {% include "head.dtl" %}
+  </head>
+
+  <body>
+    <div id="container">
+      {% include "header.dtl" %}
+      <div id="content">
+        {% block content %}{% endblock %}
+      </div>
+      {% include "footer.dtl" %}
+    </div>
+  </body>
+</html>

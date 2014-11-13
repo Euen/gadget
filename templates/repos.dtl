@@ -1,0 +1,18 @@
+{% extends "base.dtl" %}
+
+{% block title %}Repos{% endblock %}
+
+{% block content %}
+    <h1>{{ user }}'s repos</h1>
+
+    <div class="repos">
+      {% for repo in repos %}
+      <div>
+        <button class="toggle {{ repo.status }}" data-repo="{{ repo.full_name }}">
+          On/Off
+        </button>
+        <a href="{{ repo.html_url }}">{{ repo.full_name }}</a>
+      </div>
+      {% endfor %}
+    </div>
+{% endblock %}
