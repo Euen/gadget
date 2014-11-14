@@ -30,7 +30,13 @@ handle(Req, State) ->
             lager:info("Token:~p", [Token]),
             Cred = egithub:oauth(Token),
             {ok, User} = egithub:user(Cred),
-            Username = maps:get(<<"name">>, User),
+            Name = maps:get(<<"name">>, User),
+            Username =
+                case Name of
+                    null -> maps:get(<<"login">>, User);
+                    Name1 -> Name1
+                end,
+            io:format("username: ~p", [Username]),
             {ok, Repos} = repositories(Cred),
             Variables = [{user, Username},
                          {repos, Repos}],
