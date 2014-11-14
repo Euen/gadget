@@ -1,4 +1,4 @@
--module(gadget_server_utils).
+-module(gadget_utils).
 
 -export([
          hook_by_url/2,

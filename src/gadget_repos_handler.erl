@@ -6,7 +6,7 @@
          terminate/3
         ]).
 
--include("gadget_server.hrl").
+-include("gadget.hrl").
 
 -record(state, {}).
 
@@ -62,7 +62,7 @@ repositories(Cred) ->
                 true ->
                     OrgRepos;
                 false ->
-                    lists:filter(fun gadget_server_utils:is_public_repo/1,
+                    lists:filter(fun gadget_utils:is_public_repo/1,
                                  OrgRepos)
             end
         end,
@@ -98,7 +98,7 @@ repo_info(Cred, Repo) ->
                 {error, _} ->
                     []
             end,
-    Status = case gadget_server_utils:hook_by_url(?WEBHOOK_URL, Hooks) of
+    Status = case gadget_utils:hook_by_url(?WEBHOOK_URL, Hooks) of
                  not_found -> off;
                  _ -> on
              end,

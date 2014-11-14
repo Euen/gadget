@@ -1,4 +1,4 @@
--module(gadget_server_sup).
+-module(gadget_sup).
 -behavior(supervisor).
 
 -export([
@@ -51,7 +51,7 @@ start_listeners() ->
          {timeout,   12000}
         ],
 
-    cowboy:start_http(http_gadget_server, ListenerCount, RanchOpts, CowboyOpts).
+    cowboy:start_http(http_gadget, ListenerCount, RanchOpts, CowboyOpts).
 
 %%% Supervisor Behavior
 
@@ -62,7 +62,7 @@ init({}) ->
       {
         {one_for_one, 5, 10},
         [
-         {http_gadget_server,
+         {http_gadget,
           {?MODULE, start_listeners, []}, permanent, 1000, worker, [?MODULE]}
         ]
       }}.

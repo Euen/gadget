@@ -1,0 +1,13 @@
+{
+  application, gadget,
+  [
+   {description, "The best inspector for all your Erlang PRs."},
+   {vsn, "0.1.0"},
+   {applications, [kernel, stdlib, cowboy, lager, ibrowse, erlydtl, egithub]},
+   {mod, {gadget, []}},
+   {modules,
+    []
+   },
+   {registered, []}
+  ]
+}.

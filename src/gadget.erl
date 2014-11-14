@@ -1,4 +1,4 @@
--module(gadget_server).
+-module(gadget).
 -behavior(application).
 
 -export([
@@ -14,15 +14,15 @@
 -spec start(application:start_type(), term()) ->
     {ok, pid()} | {ok, pid(), term()} | {error, term()}.
 start(_StartType, _StartArgs) ->
-    gadget_server_sup:start_link().
+    gadget_sup:start_link().
 
 -spec stop(term()) -> ok.
 stop(_State) ->
-    cowboy:stop_listener(http_gadget_server),
+    cowboy:stop_listener(http_gadget),
     ok.
 
 %% Shell start function
 
 -spec start() -> ok.
 start() ->
-    application:ensure_all_started(gadget_server).
+    application:ensure_all_started(gadget).

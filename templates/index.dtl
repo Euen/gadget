@@ -3,7 +3,7 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-Elvis is a style checker for Erlang inspired in <a href="https://houndci.com/">Hound CI</a>.
+Gadget is a style checker for Erlang inspired in <a href="https://houndci.com/">Hound CI</a>.
 
 <ol class="steps">
   <li>

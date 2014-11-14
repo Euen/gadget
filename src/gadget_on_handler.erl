@@ -6,7 +6,7 @@
          terminate/3
         ]).
 
--include("gadget_server.hrl").
+-include("gadget.hrl").
 
 -record(state, {}).
 
@@ -28,13 +28,13 @@ handle(Req, State) ->
     {ok, RepoInfo} = egithub:repo(Cred, Repo),
     ok = case RepoInfo of
              #{<<"private">> := true} ->
-                 add_user(Cred, RepoInfo, ?ELVISINAKA);
+                 add_user(Cred, RepoInfo, ?GADGETINAKA);
              _ ->
                  ok
          end,
 
     Events = ["pull_request"],
-    WebhookUrl = gadget_utils:to_str(?WEBHOOK_URL),
+    WebhookUrl = elvis_utils:to_str(?WEBHOOK_URL),
     {ok, _Hook} = egithub:create_webhook(Cred, Repo, WebhookUrl, Events),
 
     Headers = [{<<"content-type">>, <<"text/html">>}],
@@ -58,7 +58,7 @@ add_user(Cred, RepoInfo, Username) ->
 
     case Type of
         <<"User">> ->
-            egithub:add_collaborator(Cred, Repo, ?ELVISINAKA);
+            egithub:add_collaborator(Cred, Repo, ?GADGETINAKA);
         _Org ->
             add_user_to_org(Cred, Login, Repo, Username)
     end.

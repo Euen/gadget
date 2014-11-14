@@ -25,4 +25,4 @@ TEST_ERLC_OPTS += +'{parse_transform, lager_transform}'
 CT_SUITES = gadget
 CT_OPTS = -cover test/gadget.coverspec  -erl_args -config config/test
 
-SHELL_OPTS= -s sync -s lager -s gadget_server -config config/app.config
+SHELL_OPTS= -s sync -s lager -s gadget -config config/app.config
