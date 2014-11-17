@@ -25,9 +25,11 @@ handle(Req, State) ->
     {Repo, _} = cowboy_req:qs_val(<<"repo">>, Req, ""),
     Cred = egithub:oauth(Token),
 
-    ok = remove_user(Cred, Repo, ?GADGETINAKA),
+    WebhookMap = application:get_env(gadget, webhooks),
+    ElvisWebhook = maps:get("elvis", WebhookMap),
+    ok = remove_user(Cred, Repo, maps:get("username", ElvisWebhook)),
     {ok, Hooks} = egithub:hooks(Cred, Repo),
-    case gadget_utils:hook_by_url(?WEBHOOK_URL, Hooks) of
+    case gadget_utils:hook_by_url(maps:get("url", ElvisWebhook), Hooks) of
         {ok, Hook} ->
             #{<<"id">> := Id} = Hook,
             ok = egithub:delete_webhook(Cred, Repo, Id);

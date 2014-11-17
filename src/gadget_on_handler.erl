@@ -26,15 +26,17 @@ handle(Req, State) ->
     Cred = egithub:oauth(Token),
 
     {ok, RepoInfo} = egithub:repo(Cred, Repo),
+    WebhookMap = application:get_env(gadget, webhooks),
+    ElvisWebhook = maps:get("elvis", WebhookMap),
     ok = case RepoInfo of
              #{<<"private">> := true} ->
-                 add_user(Cred, RepoInfo, ?GADGETINAKA);
+                 add_user(Cred, RepoInfo, maps:get("username", ElvisWebhook));
              _ ->
                  ok
          end,
 
     Events = ["pull_request"],
-    WebhookUrl = elvis_utils:to_str(?WEBHOOK_URL),
+    WebhookUrl = elvis_utils:to_str(maps:get("url", ElvisWebhook)),
     {ok, _Hook} = egithub:create_webhook(Cred, Repo, WebhookUrl, Events),
 
     Headers = [{<<"content-type">>, <<"text/html">>}],
@@ -56,9 +58,12 @@ add_user(Cred, RepoInfo, Username) ->
     #{<<"type">> := Type,
       <<"login">> := Login} = Owner,
 
+    WebhookMap = application:get_env(gadget, webhooks),
+    ElvisWebhook = maps:get("elvis", WebhookMap),
+    WhkUsername = maps:get("username", ElvisWebhook),
     case Type of
         <<"User">> ->
-            egithub:add_collaborator(Cred, Repo, ?GADGETINAKA);
+            egithub:add_collaborator(Cred, Repo, WhkUsername);
         _Org ->
             add_user_to_org(Cred, Login, Repo, Username)
     end.
