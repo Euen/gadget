@@ -87,7 +87,6 @@ repositories(Cred) ->
     AllOrgsRepos = lists:flatmap(OrgReposFun, Orgs),
     AdminRepos = lists:filter(FilterAdmin, Repos ++ AllOrgsRepos),
     AllRepos = lists:sort(SortFun, AdminRepos),
-
     Fun = fun(Repo) -> repo_info(Cred, Repo) end,
     {ok, lists:map(Fun, AllRepos)}.
 
@@ -101,10 +100,10 @@ repo_info(Cred, Repo) ->
                 {error, _} ->
                     []
             end,
-    WebhookMap = application:get_env(gadget, webhooks),
-    ElvisWebhook = maps:get("elvis", WebhookMap),
-    WhkUrl = maps:get("url", ElvisWebhook),
-    Status = case gadget_utils:hook_by_url(binary_to_list(WhkUrl), Hooks) of
+    WebhookMap = application:get_env(gadget, webhooks, #{}),
+    ElvisWebhook = maps:get(elvis, WebhookMap),
+    ElvisWkUrl = maps:get(url, ElvisWebhook),
+    Status = case gadget_utils:hook_by_url(ElvisWkUrl, Hooks) of
                  not_found -> off;
                  _ -> on
              end,
