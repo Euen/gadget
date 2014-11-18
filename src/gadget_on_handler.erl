@@ -6,8 +6,6 @@
          terminate/3
         ]).
 
--include("gadget.hrl").
-
 -record(state, {}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -25,54 +23,26 @@ handle(Req, State) ->
     {Repo, _} = cowboy_req:qs_val(<<"repo">>, Req, ""),
     Cred = egithub:oauth(Token),
 
-    {ok, RepoInfo} = egithub:repo(Cred, Repo),
-    WebhookMap = application:get_env(gadget, webhooks),
-    ElvisWebhook = maps:get("elvis", WebhookMap),
-    ok = case RepoInfo of
-             #{<<"private">> := true} ->
-                 add_user(Cred, RepoInfo, maps:get("username", ElvisWebhook));
-             _ ->
-                 ok
-         end,
-
     Events = ["pull_request"],
-    WebhookUrl = elvis_utils:to_str(maps:get("url", ElvisWebhook)),
-    {ok, _Hook} = egithub:create_webhook(Cred, Repo, WebhookUrl, Events),
-
     Headers = [{<<"content-type">>, <<"text/html">>}],
     Body = [],
-    {ok, Req2} = cowboy_req:reply(204, Headers, Body, Req),
+
+    %% identify if the url tool is correct and call to these.
+    {ToolName, Req1} =  cowboy_req:binding(tool, Req),
+    ToolsAtomList = maps:keys(application:get_env(gadget, webhooks)),
+    ToolsList = lists:map(fun atom_to_list/1, maps:keys(ToolsAtomList)),
+    {ok, Req2} =
+      case lists:member(binary_to_list(ToolName), ToolsList) of
+        true -> 
+            case ToolName of
+              <<"elvis">> -> gadget_elvis:on(Repo, Cred, Events)
+            end,
+            cowboy_req:reply(204, Headers, Body, Req1);
+        false   -> 
+            cowboy_req:reply(404, Headers, Body, Req1)
+      end,
     {ok, Req2, State}.
 
 -spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
 terminate(_Reason, _Req, _State) ->
     ok.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Private
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-add_user(Cred, RepoInfo, Username) ->
-    #{<<"full_name">> := Repo,
-      <<"owner">> := Owner} = RepoInfo,
-    #{<<"type">> := Type,
-      <<"login">> := Login} = Owner,
-
-    WebhookMap = application:get_env(gadget, webhooks),
-    ElvisWebhook = maps:get("elvis", WebhookMap),
-    WhkUsername = maps:get("username", ElvisWebhook),
-    case Type of
-        <<"User">> ->
-            egithub:add_collaborator(Cred, Repo, WhkUsername);
-        _Org ->
-            add_user_to_org(Cred, Login, Repo, Username)
-    end.
-
-add_user_to_org(Cred, Org, Repo, Username) ->
-    {ok, _} = egithub:create_team(Cred, Org, "Services", "pull", [Repo]),
-    {ok, Teams} = egithub:teams(Cred, Org),
-    [TeamId] = [TeamId
-                || #{<<"id">> := TeamId, <<"name">> := Name} <- Teams,
-                   <<"Services">> == Name],
-    ok = egithub:add_team_repository(Cred, TeamId, Repo),
-    egithub:add_team_member(Cred, TeamId, Username).

@@ -6,8 +6,6 @@
          terminate/3
         ]).
 
--include("gadget.hrl").
-
 -record(state, {}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,7 +34,6 @@ handle(Req, State) ->
                     null -> maps:get(<<"login">>, User);
                     Name1 -> Name1
                 end,
-            io:format("username: ~p", [Username]),
             {ok, Repos} = repositories(Cred),
             Variables = [{user, Username},
                          {repos, Repos}],
@@ -104,7 +101,10 @@ repo_info(Cred, Repo) ->
                 {error, _} ->
                     []
             end,
-    Status = case gadget_utils:hook_by_url(?WEBHOOK_URL, Hooks) of
+    WebhookMap = application:get_env(gadget, webhooks),
+    ElvisWebhook = maps:get("elvis", WebhookMap),
+    WhkUrl = maps:get("url", ElvisWebhook),
+    Status = case gadget_utils:hook_by_url(binary_to_list(WhkUrl), Hooks) of
                  not_found -> off;
                  _ -> on
              end,
