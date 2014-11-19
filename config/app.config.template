@@ -12,7 +12,7 @@
     %% Webhooks
     {webhooks,
       #{elvis => #{username  => "elvisinaka",
-                   url => "http://gadget.inakalabs.com/webhook/elvis"
+                   url => "http://gadget.inakalabs.com/webhook/elvi"
                   }
        }
     }
