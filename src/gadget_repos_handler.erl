@@ -100,13 +100,15 @@ repo_info(Cred, Repo) ->
                 {error, _} ->
                     []
             end,
+
+    io:format("Hooks ~p~n", [Hooks]),
+
     WebhookMap = application:get_env(gadget, webhooks, #{}),
-    ElvisWebhook = maps:get(elvis, WebhookMap),
-    ElvisWkUrl = maps:get(url, ElvisWebhook),
-    Status = case gadget_utils:hook_by_url(ElvisWkUrl, Hooks) of
-                 not_found -> off;
-                 _ -> on
-             end,
+
+    io:format("result ~p~n", [WebhookMap]),
+
+    Status = gadget_utils:enabled_tools(WebhookMap, Hooks),
+
     [{name, Name},
      {full_name, FullName},
      {html_url, HtmlUrl},

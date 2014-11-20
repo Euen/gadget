@@ -1,28 +1,25 @@
 -module(gadget_utils).
 
--export([
-         hook_by_url/2,
-         is_public_repo/1
+-export([ enabled_tools/2
+        , is_enabled/2
+        , is_public_repo/1
         ]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Public
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec hook_by_url(string(), [map()]) -> boolean().
-hook_by_url(WebhookUrl, Hooks) ->
-    Fun = fun
-              (#{<<"config">> := #{<<"url">> := Url}})
-                when Url == WebhookUrl ->
-                  true;
-              (_Other) ->
-                  false
-          end,
-    case lists:filter(Fun, Hooks) of
-        [] ->
-            not_found;
-        [Hook] -> {ok, Hook}
-    end.
+-spec enabled_tools(map(), [map()]) -> [atom()].
+enabled_tools(Tools, Hooks) ->
+    [ToolName || ToolName <- maps:keys(Tools),
+                 is_enabled(maps:get(ToolName, Tools), Hooks)].
+
+-spec is_enabled(map(), [map()]) -> boolean().
+is_enabled(#{url := ToolUrl}, Hooks) ->
+    lists:any(
+        fun(#{<<"config">> := #{<<"url">> := HookUrl}}) ->
+            ToolUrl == binary_to_list(HookUrl)
+        end, Hooks).
 
 -spec is_public_repo(map()) -> boolean().
 is_public_repo(#{<<"private">> := Private}) ->

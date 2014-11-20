@@ -5,7 +5,7 @@ TEST_DEPS = meck
 
 dep_elvis = git https://github.com/inaka/elvis.git 0.2.3
 dep_cowboy = git https://github.com/extend/cowboy.git 0.10.0
-dep_lager = git https://github.com/basho/lager.git 2.0.3
+dep_lager = git https://github.com/basho/lager.git 2.1.0
 dep_sync = git https://github.com/rustyio/sync.git master
 dep_meck = git https://github.com/eproxus/meck master
 dep_erlydtl = git https://github.com/erlydtl/erlydtl 0.9.4
