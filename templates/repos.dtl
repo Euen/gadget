@@ -18,7 +18,7 @@
         <tbody>
           {% for repo in repos %}
             <tr>
-              <td>{{repo.full_name}}</td>
+              <td class="left">{{repo.full_name}}</td>
               {% for tool in repo.status %}
                 <td>{{ tool.status }}</td>
               {% endfor %}

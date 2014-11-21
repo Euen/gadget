@@ -72,6 +72,16 @@ h1, h2, h3, h4, h5 {
     font-style: normal;
 }
 
+th, td {
+    padding: 5px;
+    text-align: center;
+    border-bottom: solid 1px;
+}
+
+td.left{
+    text-align:left;
+}
+
 #container {
     font-family: 'museo_sans_500regular', sans-serif;
     font-size: 106%;
