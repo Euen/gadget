@@ -1,7 +1,7 @@
 -module(gadget_utils).
 
 -export([ enabled_tools/2
-        , is_enabled/2
+        , status/3
         , is_public_repo/1
         ]).
 
@@ -11,15 +11,21 @@
 
 -spec enabled_tools(map(), [map()]) -> [atom()].
 enabled_tools(Tools, Hooks) ->
-    [ToolName || ToolName <- maps:keys(Tools),
-                 is_enabled(maps:get(ToolName, Tools), Hooks)].
+    [[ {name, ToolName}
+     , {status, status(ToolName, Tools, Hooks)}]
+     || ToolName <- maps:keys(Tools)].
 
--spec is_enabled(map(), [map()]) -> boolean().
-is_enabled(#{url := ToolUrl}, Hooks) ->
-    lists:any(
-        fun(#{<<"config">> := #{<<"url">> := HookUrl}}) ->
-            ToolUrl == binary_to_list(HookUrl)
-        end, Hooks).
+-spec status(atom(), map(), [map()]) -> atom().
+status(ToolName, Tools, Hooks) ->
+    #{url := ToolUrl} = maps:get(ToolName, Tools),
+    Fun =
+        fun (#{<<"config">> := #{<<"url">> := HookUrl}}) ->
+            list_to_binary(ToolUrl) == HookUrl
+        end,
+    case lists:filter(Fun, Hooks) of
+        [] -> off;
+        _  -> on
+    end.
 
 -spec is_public_repo(map()) -> boolean().
 is_public_repo(#{<<"private">> := Private}) ->

@@ -35,7 +35,10 @@ handle(Req, State) ->
                     Name1 -> Name1
                 end,
             {ok, Repos} = repositories(Cred),
-            Variables = [{user, Username},
+            WebhookMap = application:get_env(gadget, webhooks, #{}),
+            ToolsName = maps:keys(WebhookMap),
+            Variables = [{tools, ToolsName},
+                         {user, Username},
                          {repos, Repos}],
 
             Headers = [{<<"content-type">>, <<"text/html">>}],
@@ -101,11 +104,7 @@ repo_info(Cred, Repo) ->
                     []
             end,
 
-    io:format("Hooks ~p~n", [Hooks]),
-
     WebhookMap = application:get_env(gadget, webhooks, #{}),
-
-    io:format("result ~p~n", [WebhookMap]),
 
     Status = gadget_utils:enabled_tools(WebhookMap, Hooks),
 

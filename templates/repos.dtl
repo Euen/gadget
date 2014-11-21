@@ -6,13 +6,25 @@
     <h1>{{ user }}'s repos</h1>
 
     <div class="repos">
-      {% for repo in repos %}
-      <div>
-        <button class="toggle {{ repo.status }}" data-repo="{{ repo.full_name }}">
-          On/Off
-        </button>
-        <a href="{{ repo.html_url }}">{{ repo.full_name }}</a>
-      </div>
-      {% endfor %}
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            {% for tool in tools %}
+              <th>{{ tool }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for repo in repos %}
+            <tr>
+              <td>{{repo.full_name}}</td>
+              {% for tool in repo.status %}
+                <td>{{ tool.status }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
 {% endblock %}
