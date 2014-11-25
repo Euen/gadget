@@ -7,9 +7,10 @@
       toggle : function(e) {
           var button = $(this);
           var repo = button.attr('data-repo');
-          var url = button.is('.on') ? Main.offUrl : Main.onUrl;
+          var toolName = button.attr('data-tool');
+          var url = (button.is('.on') ? Main.offUrl : Main.onUrl);
           var data = {'repo' : repo};
-          $.get(url, data)
+          $.get(url+"/"+toolName, data)
               .done(function() {Main.toggleStatus(button); })
               .fail(Main.error);
       },

@@ -73,9 +73,9 @@ h1, h2, h3, h4, h5 {
 }
 
 th, td {
-    padding: 5px;
+    padding: 10px;
     text-align: center;
-    border-bottom: solid 1px;
+    border-bottom: solid 2px;
 }
 
 td.left{

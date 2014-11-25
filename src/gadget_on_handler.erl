@@ -19,6 +19,7 @@ init(_Type, Req, _Opts) ->
 
 -spec handle(cowboy_req:req(), #state{}) -> ok.
 handle(Req, State) ->
+    {ToolName, Req1} =  cowboy_req:binding(tool, Req),
     {Token, _} = cowboy_req:cookie(<<"token">>, Req, ""),
     {Repo, _} = cowboy_req:qs_val(<<"repo">>, Req, ""),
     Cred = egithub:oauth(Token),
@@ -27,10 +28,8 @@ handle(Req, State) ->
     Headers = [{<<"content-type">>, <<"text/html">>}],
     Body = [],
 
-    %% identify if the url tool is correct and call to these.
-    {ToolName, Req1} =  cowboy_req:binding(tool, Req),
-    ToolsAtomList = maps:keys(application:get_env(gadget, webhooks)),
-    ToolsList = lists:map(fun atom_to_list/1, maps:keys(ToolsAtomList)),
+    {ok, WebhookMap} = application:get_env(gadget, webhooks),
+    ToolsList = lists:map(fun atom_to_list/1, maps:keys(WebhookMap)),
     {ok, Req2} =
       case lists:member(binary_to_list(ToolName), ToolsList) of
         true -> 

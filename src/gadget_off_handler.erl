@@ -6,8 +6,6 @@
          terminate/3
         ]).
 
--include("gadget.hrl").
-
 -record(state, {}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -21,22 +19,31 @@ init(_Type, Req, _Opts) ->
 
 -spec handle(cowboy_req:req(), #state{}) -> ok.
 handle(Req, State) ->
+    {ToolNameBin, _} =  cowboy_req:binding(tool, Req),
     {Token, _} = cowboy_req:cookie(<<"token">>, Req, ""),
     {Repo, _} = cowboy_req:qs_val(<<"repo">>, Req, ""),
     Cred = egithub:oauth(Token),
 
-    WebhookMap = application:get_env(gadget, webhooks),
-    ElvisWebhook = maps:get("elvis", WebhookMap),
-    ok = remove_user(Cred, Repo, maps:get("username", ElvisWebhook)),
+    {ok, WebhookMap} = application:get_env(gadget, webhooks),
+    ToolName = binary_to_atom(ToolNameBin, utf8),
+    Tool = maps:get(ToolName, WebhookMap),
+    ok = remove_user(Cred, Repo, maps:get(username, Tool)),
     {ok, Hooks} = egithub:hooks(Cred, Repo),
-    case gadget_utils:hook_by_url(maps:get("url", ElvisWebhook), Hooks) of
-        {ok, Hook} ->
-            #{<<"id">> := Id} = Hook,
-            ok = egithub:delete_webhook(Cred, Repo, Id);
-        not_found ->
-            not_found
+    EnabledTools = gadget_utils:enabled_tools(WebhookMap, Hooks),
+    HId =
+        [HookId 
+        ||  #{hook_id := HookId, 
+              name := ToolName1,
+              status := Status} <- EnabledTools,
+            ToolName1 == ToolName,
+            Status == on],
+    io:format("~p~n", [HId]),
+    case HId of
+        [] -> 
+            not_found;
+        [Id] -> 
+            ok = egithub:delete_webhook(Cred, Repo, Id)
     end,
-
     Headers = [{<<"content-type">>, <<"text/html">>}],
     Body = [],
     {ok, Req2} = cowboy_req:reply(204, Headers, Body, Req),

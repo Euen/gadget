@@ -18,9 +18,15 @@
         <tbody>
           {% for repo in repos %}
             <tr>
-              <td class="left">{{repo.full_name}}</td>
+              <td class="left">{{ repo.full_name }}</td>
               {% for tool in repo.status %}
-                <td>{{ tool.status }}</td>
+                <td>
+                  <button class="toggle {{ tool.status }}"
+                          data-repo="{{ repo.full_name }}"
+                          data-tool="{{ tool.name }}">
+                    On/Off
+                  </button>
+                </td>
               {% endfor %}
             </tr>
           {% endfor %}

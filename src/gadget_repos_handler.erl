@@ -107,11 +107,11 @@ repo_info(Cred, Repo) ->
     WebhookMap = application:get_env(gadget, webhooks, #{}),
 
     Status = gadget_utils:enabled_tools(WebhookMap, Hooks),
-
+    StatusList = lists:map(fun maps:to_list/1, Status),
     [{name, Name},
      {full_name, FullName},
      {html_url, HtmlUrl},
-     {status, Status}].
+     {status, StatusList}].
 
 is_owners_member(Cred, OrgName) ->
     {ok, Teams} = egithub:teams(Cred, OrgName),
