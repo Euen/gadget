@@ -25,7 +25,6 @@ handle(Req, State) ->
             {ok, Req2} = cowboy_req:reply(302, Headers, Req),
             {ok, Req2, State};
         {Token, _} ->
-            lager:info("Token:~p", [Token]),
             Cred = egithub:oauth(Token),
             {ok, User} = egithub:user(Cred),
             Name = maps:get(<<"name">>, User),

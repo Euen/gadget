@@ -1,25 +1,24 @@
 -module(gadget_elvis).
 
 -export([
-         on/3
+         on/4
         ]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Handler Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec on(term(), term(), term()) -> ok.
-on(Repo, Cred, Events) ->
+-spec on(term(), term(), term(), term()) -> ok.
+on(Repo, Cred, Events, ToolName) ->
   {ok, RepoInfo} = egithub:repo(Cred, Repo),
-  
   ok = case RepoInfo of
            #{<<"private">> := true} ->
-               add_user(Cred, RepoInfo, get_username());
+               add_user(Cred, RepoInfo, get_username(ToolName));
            _ ->
                ok
        end,
 
-  WebhookUrl = elvis_utils:to_str(get_url()),
+  WebhookUrl = elvis_utils:to_str(get_url(ToolName)),
   {ok, _Hook} = egithub:create_webhook(Cred, Repo, WebhookUrl, Events).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -31,12 +30,9 @@ add_user(Cred, RepoInfo, Username) ->
     #{<<"type">> := Type,
       <<"login">> := Login} = Owner,
 
-    WebhookMap = application:get_env(gadget, webhooks),
-    ElvisWebhook = maps:get("elvis", WebhookMap),
-    WhkUsername = maps:get("username", ElvisWebhook),
     case Type of
         <<"User">> ->
-            egithub:add_collaborator(Cred, Repo, WhkUsername);
+            egithub:add_collaborator(Cred, Repo, Username);
         _Org ->
             add_user_to_org(Cred, Login, Repo, Username)
     end.
@@ -50,12 +46,12 @@ add_user_to_org(Cred, Org, Repo, Username) ->
     ok = egithub:add_team_repository(Cred, TeamId, Repo),
     egithub:add_team_member(Cred, TeamId, Username).
 
-get_username() ->
-  WebhookMap = application:get_env(gadget, webhooks),
-  ElvisWebhook = maps:get("elvis", WebhookMap),
-  maps:get("username", ElvisWebhook).
+get_username(ToolName) ->
+  {ok, WebhookMap} = application:get_env(gadget, webhooks),
+  Tool = maps:get(ToolName, WebhookMap),
+  maps:get(username, Tool).
 
-get_url() ->
-  WebhookMap = application:get_env(gadget, webhooks),
-  ElvisWebhook = maps:get("elvis", WebhookMap),
-  maps:get("url", ElvisWebhook).
+get_url(ToolName) ->
+  {ok, WebhookMap} = application:get_env(gadget, webhooks),
+  Tool = maps:get(ToolName, WebhookMap),
+  maps:get(url, Tool).

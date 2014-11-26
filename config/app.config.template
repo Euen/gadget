@@ -7,8 +7,9 @@
     {github_password, "gogogadget"},
     %% OAuth
     {github_scope, "repo,user:email"},
-    {github_client_id, ""},
-    {github_client_secret, ""},
+    {github_client_id, "53b45kjtp45jw5kj694l6h946"},
+    {github_client_secret, 
+    "338h7l3hg9dlh3g7l3gc78l3glhg9l4g679fljg8lhg7"},
     %% Webhooks
     {webhooks,
       #{elvis => #{username  => "elvisinaka",

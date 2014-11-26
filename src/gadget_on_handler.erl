@@ -30,11 +30,13 @@ handle(Req, State) ->
 
     {ok, WebhookMap} = application:get_env(gadget, webhooks),
     ToolsList = lists:map(fun atom_to_list/1, maps:keys(WebhookMap)),
+    ToolNameAtom = binary_to_atom(ToolName, utf8),  
     {ok, Req2} =
-      case lists:member(binary_to_list(ToolName), ToolsList) of
+      case lists:member(atom_to_list(ToolNameAtom), ToolsList) of
         true -> 
-            case ToolName of
-              <<"elvis">> -> gadget_elvis:on(Repo, Cred, Events)
+            case ToolNameAtom of
+              elvis -> gadget_elvis:on(Repo, Cred, Events, ToolNameAtom);
+              _ -> cowboy_req:reply(404, Headers, Body, Req1)
             end,
             cowboy_req:reply(204, Headers, Body, Req1);
         false   -> 
