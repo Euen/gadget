@@ -63,13 +63,7 @@ repositories(Cred) ->
     OrgReposFun =
         fun (#{<<"login">> := OrgName}) ->
             {ok, OrgRepos} = egithub:all_org_repos(Cred, OrgName, Opts),
-            case is_owners_member(Cred, OrgName) of
-                true ->
-                    OrgRepos;
-                false ->
-                    lists:filter(fun gadget_utils:is_public_repo/1,
-                                 OrgRepos)
-            end
+            get_own_repos(Cred, OrgName, OrgRepos)
         end,
 
     FilterAdmin =
@@ -119,3 +113,12 @@ is_owners_member(Cred, OrgName) ->
     {ok, #{<<"login">> := Username}} = egithub:user(Cred),
 
     active == egithub:team_membership(Cred, TeamId, Username).
+
+get_own_repos(Cred, OrgName, OrgRepos) ->
+    case is_owners_member(Cred, OrgName) of
+        true ->
+            OrgRepos;
+        false ->
+            lists:filter(fun gadget_utils:is_public_repo/1,
+                         OrgRepos)
+    end.

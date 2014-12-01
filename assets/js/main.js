@@ -1,6 +1,5 @@
   Main = {
-      onUrl : "/on",
-      offUrl : "/off",
+      url : "/active-tools",
       login : function(e) {
           window.location.href = "/login";
       },
@@ -8,11 +7,18 @@
           var button = $(this);
           var repo = button.attr('data-repo');
           var toolName = button.attr('data-tool');
-          var url = (button.is('.on') ? Main.offUrl : Main.onUrl);
-          var data = {'repo' : repo};
-          $.get(url+"/"+toolName, data)
-              .done(function() {Main.toggleStatus(button); })
-              .fail(Main.error);
+          var data = JSON.stringify({'tool': toolName, 'repo': repo});
+          var url = (button.is('.on') ? Main.url+"/"+toolName+"?repo="+repo : Main.url);
+          var type = (button.is('.on') ? "DELETE" : "POST");
+
+          $.ajax({
+            type: type,
+            url: url,
+            contentType: "application/json",
+            data: data
+          })
+            .done(function() {Main.toggleStatus(button); })
+            .fail(Main.error);
       },
       toggleStatus : function(button) {
           if(button.is('.on'))

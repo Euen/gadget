@@ -37,8 +37,8 @@ start_cowboy_listeners() ->
             %% Web UI
             {"/", gadget_plain_dtl_handler, [index_dtl]},
             {"/repos", gadget_repos_handler, []},
-            {"/on/:tool", gadget_on_handler, []},
-            {"/off/:tool", gadget_off_handler, []},
+            {"/active-tools", gadget_on_handler, []},
+            {"/active-tools/:tool", gadget_off_handler, []},
             {"/assets/[...]", cowboy_static, {dir, "assets"}},
             %% OAuth
             {"/login", gadget_login_handler, []},

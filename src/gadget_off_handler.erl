@@ -2,7 +2,9 @@
 
 -export([
          init/3,
-         handle/2,
+         rest_init/2,
+         allowed_methods/2,
+         delete_resource/2,
          terminate/3
         ]).
 
@@ -11,14 +13,22 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Handler Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec init(term(), cowboy_req:req(), term()) -> 
+    {term(), term(), term()}.
+init(_Transport, _Req, _Opts) ->
+  {upgrade, protocol, cowboy_rest}.
 
--spec init({atom(), atom()}, cowboy_req:req(), term()) ->
-    {ok, Req, State} | {shutdown, Req, State}.
-init(_Type, Req, _Opts) ->
+-spec rest_init(cowboy_req:req(), term()) -> 
+  {ok, cowboy_req:req(), #state{}}.
+rest_init(Req, _Opts) ->
     {ok, Req, #state{}}.
+-spec allowed_methods(cowboy_req:req(), term()) ->
+    {[_], cowboy_req:req(), term()}.
+allowed_methods(Req, State) ->
+  {[<<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
--spec handle(cowboy_req:req(), #state{}) -> ok.
-handle(Req, State) ->
+-spec delete_resource(cowboy_req:req(), #state{}) -> ok.
+delete_resource(Req, State) ->
     {ToolNameBin, _} =  cowboy_req:binding(tool, Req),
     {Token, _} = cowboy_req:cookie(<<"token">>, Req, ""),
     {Repo, _} = cowboy_req:qs_val(<<"repo">>, Req, ""),
@@ -44,10 +54,7 @@ handle(Req, State) ->
         [Id] -> 
             ok = egithub:delete_webhook(Cred, Repo, Id)
     end,
-    Headers = [{<<"content-type">>, <<"text/html">>}],
-    Body = [],
-    {ok, Req2} = cowboy_req:reply(204, Headers, Body, Req),
-    {ok, Req2, State}.
+    {true, Req, State}.
 
 -spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
 terminate(_Reason, _Req, _State) ->

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>{% block title %}Home{% endblock %} - Elvis CI</title>
+    <title>{% block title %}Home{% endblock %} - Gadget</title>
     {% include "head.dtl" %}
   </head>
 

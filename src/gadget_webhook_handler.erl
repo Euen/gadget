@@ -31,7 +31,7 @@ handle(Req, State) ->
         {error, Reason} ->
             Status = 400,
             RespHeaders = [{<<"content-type">>, <<"text/plain">>}],
-            RespBody = [<<"There was an error while processing the event: ">>, %% Long line
+            RespBody = [<<"There was an error while processing the event: ">>,
                         gadget_utils:to_str(Reason)],
             {ok, Req3} = cowboy_req:reply(Status, RespHeaders, RespBody, Req2),
             {ok, Req3, State};
