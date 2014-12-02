@@ -1,0 +1,36 @@
+{% extends "base.dtl" %}
+
+{% block title %}Repos{% endblock %}
+
+{% block content %}
+    <h1>{{ user }}'s repos</h1>
+
+    <div class="repos">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            {% for tool in tools %}
+              <th>{{ tool }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for repo in repos %}
+            <tr>
+              <td class="left">{{ repo.full_name }}</td>
+              {% for tool in repo.status %}
+                <td>
+                  <button class="toggle {{ tool.status }}"
+                          data-repo="{{ repo.full_name }}"
+                          data-tool="{{ tool.name }}">
+                    On/Off
+                  </button>
+                </td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+{% endblock %}

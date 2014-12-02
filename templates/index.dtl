@@ -1,0 +1,23 @@
+{% extends "base.dtl" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+
+<ol class="steps">
+  <li>
+    <button id="login">Sign in with GitHub</button>
+  </li>
+  <li>
+    Activate Gadget for your GitHub repositories.
+  </li>
+  <li>
+    When pull requests are created or modified Gadget will review your code and
+    add comments to it.
+  </li>
+  <li>
+    Check the comments and fix your code accordingly.
+  </li>
+</ol>
+
+{% endblock %}
