@@ -37,7 +37,7 @@ handle(Req, State) ->
                     {ok, Req4, State};
                 {error, Reason} ->
                     lager:info("Error: ~p", [Reason]),
-                    Body = [<<"Error: ">>, Reason],
+                    Body = [<<"Error: ">>, io_lib:format("~p", [Reason])],
                     {ok, Req3} = cowboy_req:reply(400, Headers, Body, Req2),
                     {ok, Req3, State}
             end
@@ -55,25 +55,33 @@ access_token(Code) ->
     {ok, ClientId} = application:get_env(gadget, github_client_id),
     {ok, ClientSecret} = application:get_env(gadget, github_client_secret),
     lager:info("~p - ~p", [ClientId, ClientSecret]),
-    Url = "https://github.com/login/oauth/access_token",
-    Headers = [{"Content-Type", "application/x-www-form-urlencoded"},
-               {"Accept", "application/json"}],
+    Url = "/login/oauth/access_token",
+    Headers = #{"Content-Type" => "application/x-www-form-urlencoded",
+                "Accept" => "application/json"},
     Body = ["code=", Code,
             "&client_id=", ClientId,
             "&client_secret=", ClientSecret],
-    Opts = [{ssl_options, [{depth, 0}]}],
-    case ibrowse:send_req(Url, Headers, post, Body, Opts) of
-        {ok, "200", _RespHeaders, RespBody} ->
-            JsonBody = jiffy:decode(RespBody, [return_maps]),
-            case maps:is_key(<<"access_token">>, JsonBody) of
-                true ->
-                    Token = maps:get(<<"access_token">>, JsonBody),
-                    {ok, Token};
-                false ->
-                    {error, RespBody}
-            end;
-        {ok, Status, _, _} ->
-            {error, Status};
-        {error, Reason} ->
-            {error, Reason}
-    end.
+    {ok, Pid} = shotgun:open("github.com", 443, https),
+    % lager:warning("status ~p response ~p", [S, R]),
+    Response =
+        case shotgun:post(Pid, Url, Headers, Body, #{}) of
+            {ok, #{status_code := 200, body := RespBody}} ->
+                JsonBody = jiffy:decode(RespBody, [return_maps]),
+                case maps:is_key(<<"access_token">>, JsonBody) of
+                    true ->
+                        Token = maps:get(<<"access_token">>, JsonBody),
+                        lager:warning("true token ~p", [Token]),
+                        {ok, Token};
+                    false ->
+                        lager:warning("false"),
+                        {error, RespBody}
+                end;
+            {ok, #{status_code := Status}} ->
+                lager:warning("ok status-code ~p", [Status]),
+                {error, Status};
+            {error, Reason} ->  
+                lager:warning("error reason ~p", [Reason]),
+                {error, Reason}
+        end,
+    shotgun:close(Pid),
+    Response.

@@ -1,6 +1,6 @@
 PROJECT = gadget
 
-DEPS = elvis cowboy lager sync erlydtl merl egithub
+DEPS = elvis cowboy lager sync erlydtl merl egithub shotgun
 TEST_DEPS = meck
 
 dep_elvis = git https://github.com/inaka/elvis.git 0.2.3
@@ -11,6 +11,8 @@ dep_meck = git https://github.com/eproxus/meck master
 dep_erlydtl = git https://github.com/erlydtl/erlydtl 0.9.4
 dep_merl = git https://github.com/richcarl/merl master
 dep_egithub = git https://github.com/inaka/erlang-github 0.1.1
+dep_shotgun = git https://github.com/inaka/shotgun 0.1.6
+
 
 include erlang.mk
 

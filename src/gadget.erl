@@ -27,7 +27,7 @@ stop(_State) ->
 
 -spec start() -> ok.
 start() ->
-    application:  ensure_all_started(gadget).
+    application:ensure_all_started(gadget).
 
 start_cowboy_listeners() ->
   {ok, Port} = application:get_env(cowboy, http_port),

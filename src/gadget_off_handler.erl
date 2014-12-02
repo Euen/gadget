@@ -64,7 +64,7 @@ terminate(_Reason, _Req, _State) ->
 %%% Private
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% @doc Only remove the user if the repo belong to a user, otherwise the
+%% @doc Only remove the user if the repo belongs to a user, otherwise the
 %%      the user should not be removed from the Services team just in case
 %%      it is being used in another project from the same organisation.
 remove_user(Cred, Repo, Username) ->
