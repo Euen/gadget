@@ -11,3 +11,5 @@ rel/example_project
 log*/
 config/app.config
 .erlang.mk.packages.v2
+_rel/
+relx
