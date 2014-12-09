@@ -53,5 +53,4 @@ get_username(ToolName) ->
 
 get_url(ToolName) ->
   {ok, WebhookMap} = application:get_env(gadget, webhooks),
-  Tool = maps:get(ToolName, WebhookMap),
-  maps:get(url, Tool).
+  maps:get(ToolName, WebhookMap).

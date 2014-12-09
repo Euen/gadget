@@ -36,8 +36,8 @@ delete_resource(Req, State) ->
 
     {ok, WebhookMap} = application:get_env(gadget, webhooks),
     ToolName = binary_to_atom(ToolNameBin, utf8),
-    Tool = maps:get(ToolName, WebhookMap),
-    ok = remove_user(Cred, Repo, maps:get(username, Tool)),
+    {ok, Username} = application:get_env(gadget, github_user),
+    ok = remove_user(Cred, Repo, Username),
     {ok, Hooks} = egithub:hooks(Cred, Repo),
     EnabledTools = gadget_utils:enabled_tools(WebhookMap, Hooks),
     HId =
