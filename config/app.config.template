@@ -3,18 +3,15 @@
    gadget,
    [
     %% Basic Auth
-    {github_user, "gadgetinaka"},
-    {github_password, "gogogadget"},
+    {github_user, "gadget"},
+    {github_password, "gadgetpass"},
     %% OAuth
     {github_scope, "repo,user:email"},
-    {github_client_id, "53b45kjtp45jw5kj694l6h946"},
-    {github_client_secret, 
-    "338h7l3hg9dlh3g7l3gc78l3glhg9l4g679fljg8lhg7"},
+    {github_client_id, "bcn98345nv2098682c69"},
+    {github_client_secret, "98vb98nbsbfgdjdlh87s986s08724958nfgdv"},
     %% Webhooks
     {webhooks,
-      #{elvis => #{username  => "elvisinaka",
-                   url => "http://gadget.inakalabs.com/webhook/elvis"
-                  }
+      #{elvis => "http://gadget.inakalabs.com/webhooks/elvis"
        }
     }
    ]
@@ -35,7 +32,8 @@
                      {elvis_style, god_modules, [25]},
                      {elvis_style, no_if_expression, []},
                      {elvis_style, invalid_dynamic_call, [
-                                    elvis, gadget_plain_dtl_handler]},
+                                    elvis,
+                                    gadget_plain_dtl_handler]},
                      {elvis_style, used_ignored_variable, []},
                      {elvis_style, no_behavior_info, []},
                      {
@@ -45,14 +43,7 @@
                      }
                     ]
        }
-    },
-    %% Basic Auth
-    {github_user, "gadgetinaka"},
-    {github_password, "gogogadget"},
-    %% OAuth
-    {github_scope, "repo,user:email"},
-    {github_client_id, ""},
-    {github_client_secret, ""}
+    }
    ]
  },
  {

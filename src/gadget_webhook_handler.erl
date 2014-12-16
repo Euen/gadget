@@ -19,6 +19,7 @@ init(_Type, Req, _Opts) ->
 
 -spec handle(cowboy_req:req(), #state{}) -> ok.
 handle(Req, State) ->
+    ToolName = cowboy_req:binding(tool, Req),
     {Headers, Req} = cowboy_req:headers(Req),
     HeadersMap = maps:from_list(Headers),
     {ok, Body, Req2} = cowboy_req:body(Req),
@@ -26,8 +27,7 @@ handle(Req, State) ->
                    body => Body},
 
     lager:info("~p", [Headers]),
-
-    case gadget:webhook(RequestMap) of
+    case gadget:webhook(ToolName, RequestMap) of
         {error, Reason} ->
             Status = 400,
             RespHeaders = [{<<"content-type">>, <<"text/plain">>}],

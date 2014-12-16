@@ -16,7 +16,7 @@ enabled_tools(Tools, Hooks) ->
 
 -spec tool_info(atom(), map(), [map()]) -> atom().
 tool_info(ToolName, Tools, Hooks) ->
-    #{url := ToolUrl} = maps:get(ToolName, Tools),
+    ToolUrl = maps:get(ToolName, Tools),
     Fun =
         fun (#{<<"config">> := #{<<"url">> := HookUrl}}) ->
             list_to_binary(ToolUrl) == HookUrl

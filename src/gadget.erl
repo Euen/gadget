@@ -1,10 +1,10 @@
 -module(gadget).
 -behavior(application).
 
--export([
-         start/0,
-         start/2,
-         stop/1
+-export([ start/0
+        , start/2
+        , stop/1
+        , webhook/2
         ]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,7 +44,7 @@ start_cowboy_listeners() ->
             {"/login", gadget_login_handler, []},
             {"/callback", gadget_callback_handler, []},
             %% Webhook
-            {"/webhook", gadget_webhook_handler, []}
+            {"/webhook/:tool", gadget_webhook_handler, []}
           ]
     }
   ]),
@@ -59,3 +59,6 @@ start_cowboy_listeners() ->
        {timeout,   12000}
       ],
   cowboy:start_http(http_gadget, ListenerCount, RanchOpts, CowboyOpts).
+
+-spec webhook(atom(), map()) -> ok | {error, term()}.
+webhook(elvis, RequestMap) -> elvis:webhook(RequestMap).
