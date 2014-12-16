@@ -61,5 +61,4 @@ start_cowboy_listeners() ->
   cowboy:start_http(http_gadget, ListenerCount, RanchOpts, CowboyOpts).
 
 -spec webhook(atom(), map()) -> ok | {error, term()}.
-webhook(elvis, RequestMap) -> elvis:webhook(RequestMap);
-webhook(compiler, RequestMap) -> gadget_compiler:webhook(RequestMap).
+webhook(elvis, RequestMap) -> elvis:webhook(RequestMap).
