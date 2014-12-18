@@ -1,17 +1,18 @@
 PROJECT = gadget
 
-DEPS = elvis cowboy lager sync erlydtl merl egithub shotgun
+DEPS = elvis cowboy lager sync erlydtl merl egithub shotgun eper
 TEST_DEPS = meck
 
-dep_elvis = git https://github.com/inaka/elvis.git 0.2.3
-dep_cowboy = git https://github.com/extend/cowboy.git 0.10.0
-dep_lager = git https://github.com/basho/lager.git 2.1.0
-dep_sync = git https://github.com/rustyio/sync.git master
-dep_meck = git https://github.com/eproxus/meck master
-dep_erlydtl = git https://github.com/erlydtl/erlydtl 0.9.4
-dep_merl = git https://github.com/richcarl/merl master
-dep_egithub = git https://github.com/inaka/erlang-github 0.1.1
-dep_shotgun = git https://github.com/inaka/shotgun 0.1.6
+dep_eper = git git://github.com/massemanet/eper.git 0.90.0
+dep_elvis = git git://github.com/inaka/elvis.git 0.2.3
+dep_cowboy = git git://github.com/extend/cowboy.git 0.10.0
+dep_lager = git git://github.com/basho/lager.git 2.1.0
+dep_sync = git git://github.com/rustyio/sync.git master
+dep_meck = git git://github.com/eproxus/meck master
+dep_erlydtl = git git://github.com/erlydtl/erlydtl 0.9.4
+dep_merl = git git://github.com/richcarl/merl master
+dep_egithub = git git://github.com/inaka/erlang-github 0.1.1
+dep_shotgun = git git://github.com/inaka/shotgun 0.1.6
 
 
 include erlang.mk
