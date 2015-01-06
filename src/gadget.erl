@@ -32,7 +32,7 @@ start() ->
   application:ensure_all_started(gadget).
 
 -spec webhook(atom(), map()) -> ok | {error, term()}.
-webhook(elvis, RequestMap) ->
+webhook(<<"elvis">>, RequestMap) ->
   elvis:webhook(RequestMap).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
