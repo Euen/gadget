@@ -2,7 +2,8 @@
 
 -export([ enabled_tools/2
         , tool_info/3
-        , is_public_repo/1
+        , is_public/1
+        , is_admin/1
         ]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -18,7 +19,8 @@ tool_info(ToolName, Tools, Hooks) ->
   ToolUrl = maps:get(ToolName, Tools),
   Fun =
     fun (#{<<"config">> := #{<<"url">> := HookUrl}}) ->
-      list_to_binary(ToolUrl) == HookUrl
+      list_to_binary(ToolUrl) == HookUrl;
+        (_) -> false
     end,
   FilteredHooks = lists:filter(Fun, Hooks),
   Status =
@@ -39,6 +41,9 @@ tool_info(ToolName, Tools, Hooks) ->
    , status => Status
    , hook_id => HookId}.
 
--spec is_public_repo(map()) -> boolean().
-is_public_repo(#{<<"private">> := Private}) ->
-  not Private.
+-spec is_public(map()) -> boolean().
+is_public(#{<<"private">> := Private}) -> not Private.
+
+-spec is_admin(map()) -> boolean().
+is_admin(#{<<"permissions">> := #{<<"admin">> := true}}) -> true;
+is_admin(_Repo) -> false.

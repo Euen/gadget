@@ -26,17 +26,17 @@ handle(Req, State) ->
     {Token, _} ->
       Cred = egithub:oauth(Token),
       {ok, User} = egithub:user(Cred),
-      Name = maps:get(<<"name">>, User),
+      Name = maps:get(<<"name">>, User, null),
       Username =
         case Name of
           null -> maps:get(<<"login">>, User);
           Name1 -> Name1
         end,
-      {ok, Repos} = repositories(Cred),
+      Repos = repositories(Cred),
       WebhookMap = application:get_env(gadget, webhooks, #{}),
-      ToolsName = maps:keys(WebhookMap),
-      Variables = [ {tools, ToolsName}
-                  , {user, Username}
+      Tools = maps:keys(WebhookMap),
+      Variables = [ {tools, Tools}
+                  , {user,  Username}
                   , {repos, Repos}
                   ],
 
@@ -59,27 +59,19 @@ repositories(Cred) ->
   Opts = #{type => <<"owner">>},
   {ok, Repos} = egithub:all_repos(Cred, Opts),
   {ok, Orgs} = egithub:orgs(Cred),
+
   OrgReposFun =
     fun(#{<<"login">> := OrgName}) ->
       {ok, OrgRepos} = egithub:all_org_repos(Cred, OrgName, Opts),
-      get_own_repos(Cred, OrgName, OrgRepos)
+      OrgRepos
     end,
-
-  FilterAdmin =
-    fun
-      (#{<<"permissions">> := #{<<"admin">> := true}}) -> true;
-      (_Repo) -> false
-    end,
-  SortFun =
-    fun(#{<<"full_name">> := A}, #{<<"full_name">> := B}) ->
-      A < B
-    end,
-
   AllOrgsRepos = lists:flatmap(OrgReposFun, Orgs),
-  AdminRepos = lists:filter(FilterAdmin, Repos ++ AllOrgsRepos),
-  AllRepos = lists:sort(SortFun, AdminRepos),
-  Fun = fun(Repo) -> repo_info(Cred, Repo) end,
-  {ok, lists:map(Fun, AllRepos)}.
+
+  PublicRepos =
+    [Repo || Repo <- Repos ++ AllOrgsRepos,
+             gadget_utils:is_admin(Repo), gadget_utils:is_public(Repo)],
+
+  lists:sort([repo_info(Cred, Repo) || Repo <- PublicRepos]).
 
 repo_info(Cred, Repo) ->
   Name = maps:get(<<"name">>, Repo),
@@ -95,21 +87,8 @@ repo_info(Cred, Repo) ->
 
   Status = gadget_utils:enabled_tools(WebhookMap, Hooks),
   StatusList = lists:map(fun maps:to_list/1, Status),
-  [ {name, Name}
-  , {full_name, FullName}
+  [ {full_name, FullName}
+  , {name, Name}
   , {html_url, HtmlUrl}
-  , {status, StatusList}].
-
-is_owners_member(Cred, OrgName) ->
-  {ok, Teams} = egithub:teams(Cred, OrgName),
-  [TeamId] = [TeamId || #{<<"id">> := TeamId, <<"name">> := Name} <- Teams,
-                        <<"Owners">> == Name],
-  {ok, #{<<"login">> := Username}} = egithub:user(Cred),
-
-  active == egithub:team_membership(Cred, TeamId, Username).
-
-get_own_repos(Cred, OrgName, OrgRepos) ->
-  case is_owners_member(Cred, OrgName) of
-    true -> OrgRepos;
-    false -> lists:filter(fun gadget_utils:is_public_repo/1, OrgRepos)
-  end.
+  , {status, StatusList}
+  ].
