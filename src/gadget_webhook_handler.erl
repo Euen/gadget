@@ -18,28 +18,27 @@ init(_Type, Req, _Opts) ->
 
 -spec handle(cowboy_req:req(), #state{}) -> ok.
 handle(Req, State) ->
-  ToolName = cowboy_req:binding(tool, Req),
-  {Headers, Req} = cowboy_req:headers(Req),
+  {ToolName, Req1} = cowboy_req:binding(tool, Req),
+  {Headers, Req2} = cowboy_req:headers(Req1),
   HeadersMap = maps:from_list(Headers),
-  {ok, Body, Req2} = cowboy_req:body(Req),
+  {ok, Body, Req3} = cowboy_req:body(Req2),
   RequestMap = #{headers => HeadersMap,
                  body => Body},
 
-  lager:info("~p", [Headers]),
   case gadget:webhook(ToolName, RequestMap) of
     {error, Reason} ->
       Status = 400,
       RespHeaders = [{<<"content-type">>, <<"text/plain">>}],
       RespBody = [<<"There was an error while processing the event: ">>,
                   gadget_utils:to_str(Reason)],
-      {ok, Req3} = cowboy_req:reply(Status, RespHeaders, RespBody, Req2),
-      {ok, Req3, State};
+      {ok, Req4} = cowboy_req:reply(Status, RespHeaders, RespBody, Req3),
+      {ok, Req4, State};
     _Result ->
       Status = 200,
       RespHeaders = [{<<"content-type">>, <<"text/plain">>}],
       RespBody = <<"Event processed.">>,
-      {ok, Req3} = cowboy_req:reply(Status, RespHeaders, RespBody, Req2),
-      {ok, Req3, State}
+      {ok, Req4} = cowboy_req:reply(Status, RespHeaders, RespBody, Req3),
+      {ok, Req4, State}
   end.
 
 -spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
