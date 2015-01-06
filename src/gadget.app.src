@@ -3,7 +3,8 @@
   [
    {description, "The ultimate code checking machine"},
    {vsn, "0.1.1"},
-   {applications, [kernel, stdlib, cowboy, lager, shotgun, erlydtl, egithub]},
+   {applications,
+    [kernel, stdlib, cowboy, lager, shotgun, elvis, erlydtl, egithub]},
    {mod, {gadget, []}},
    {modules,
     []
