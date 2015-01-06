@@ -26,7 +26,7 @@ handle(Req, State) ->
     {Token, _} ->
       Cred = egithub:oauth(Token),
       {ok, User} = egithub:user(Cred),
-      Name = maps:get(<<"name">>, User),
+      Name = maps:get(<<"name">>, User, null),
       Username =
         case Name of
           null -> maps:get(<<"login">>, User);
