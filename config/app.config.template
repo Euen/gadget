@@ -2,9 +2,6 @@
  {
    gadget,
    [
-    %% Basic Auth
-    {github_user, "gadget"},
-    {github_password, "gadgetpass"},
     %% OAuth
     {github_scope, "repo,user:email"},
     {github_client_id, "bcn98345nv2098682c69"},
@@ -43,7 +40,10 @@
                      }
                     ]
        }
-    }
+    },
+    %% Basic Auth
+    {github_user, "gadget"},
+    {github_password, "gadgetpass"},
    ]
  },
  {
