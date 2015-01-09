@@ -33,9 +33,12 @@ start() ->
 
 -spec webhook(atom(), map()) -> ok | {error, term()}.
 webhook(<<"compiler">>, RequestMap) ->
-  gadget_compiler_webhook:event(github_credentials(), RequestMap);
+  do_webhook(gadget_compiler_webhook, RequestMap);
 webhook(<<"elvis">>, RequestMap) ->
-  elvis_webhook:event(github_credentials(), RequestMap).
+  do_webhook(elvis_webhook, RequestMap).
+
+do_webhook(Mod, RequestMap) ->
+  egithub_webhook:event(Mod, github_credentials(), RequestMap).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Not exported functions
