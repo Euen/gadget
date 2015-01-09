@@ -47,7 +47,6 @@ handle_post(Req, State) ->
       Repo = maps:get(<<"repo">>, Decoded),
       {Token, _} = cowboy_req:cookie(<<"token">>, Req, ""),
       Cred = egithub:oauth(Token),
-      {ok, RepoInfo} = egithub:repo(Cred, Repo),
       {ok, _Hook} =
         egithub:create_webhook(Cred, Repo, WebhookUrl, ["pull_request"]),
       {true, Req1, State}

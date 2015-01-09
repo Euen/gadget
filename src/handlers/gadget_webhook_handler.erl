@@ -30,7 +30,7 @@ handle(Req, State) ->
       Status = 400,
       RespHeaders = [{<<"content-type">>, <<"text/plain">>}],
       RespBody = [<<"There was an error while processing the event: ">>,
-                  gadget_utils:to_str(Reason)],
+                  io_lib:format("~p", [Reason])],
       {ok, Req4} = cowboy_req:reply(Status, RespHeaders, RespBody, Req3),
       {ok, Req4, State};
     _Result ->
