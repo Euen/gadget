@@ -33,7 +33,7 @@ start() ->
 
 -spec webhook(atom(), map()) -> ok | {error, term()}.
 webhook(<<"elvis">>, RequestMap) ->
-  elvis:webhook(RequestMap).
+  elvis_webhook:event(github_credentials(), RequestMap).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Not exported functions
@@ -64,3 +64,9 @@ start_cowboy_listeners() ->
     , {timeout,   12000}
     ],
   cowboy:start_http(http_gadget, ListenerCount, RanchOpts, CowboyOpts).
+
+-spec github_credentials() -> egithub:credentials().
+github_credentials() ->
+    User = application:get_env(gadget, github_user, ""),
+    Password = application:get_env(gadget, github_password, ""),
+    egithub:basic_auth(User, Password).

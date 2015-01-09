@@ -10,7 +10,10 @@
     {webhooks,
       #{elvis => "http://gadget.inakalabs.com/webhooks/elvis"
        }
-    }
+    },
+    %% Basic Auth
+    {github_user, "github-user"},
+    {github_password, "github-password"}
    ]
  },
  {
@@ -40,10 +43,7 @@
                      }
                     ]
        }
-    },
-    %% Basic Auth
-    {github_user, "gadget"},
-    {github_password, "gadgetpass"},
+    }
    ]
  },
  {
