@@ -32,6 +32,8 @@ start() ->
   application:ensure_all_started(gadget).
 
 -spec webhook(atom(), map()) -> ok | {error, term()}.
+webhook(<<"compiler">>, RequestMap) ->
+  gadget_compiler_webhook:event(github_credentials(), RequestMap);
 webhook(<<"elvis">>, RequestMap) ->
   elvis_webhook:event(github_credentials(), RequestMap).
 

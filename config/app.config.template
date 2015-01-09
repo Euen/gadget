@@ -8,7 +8,8 @@
     {github_client_secret, "98vb98nbsbfgdjdlh87s986s08724958nfgdv"},
     %% Webhooks
     {webhooks,
-      #{elvis => "http://gadget.inakalabs.com/webhooks/elvis"
+      #{elvis => "http://gadget.inakalabs.com/webhooks/elvis",
+        compiler => "http://gadget.inakalabs.com/webhooks/compiler"
        }
     },
     %% Basic Auth
@@ -32,7 +33,6 @@
                      {elvis_style, god_modules, [25]},
                      {elvis_style, no_if_expression, []},
                      {elvis_style, invalid_dynamic_call, [
-                                    elvis,
                                     gadget_plain_dtl_handler]},
                      {elvis_style, used_ignored_variable, []},
                      {elvis_style, no_behavior_info, []},
