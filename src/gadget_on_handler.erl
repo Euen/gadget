@@ -38,28 +38,20 @@ handle_post(Req, State) ->
   {ok, Body, Req1} = cowboy_req:body(Req),
   Decoded = jiffy:decode(Body, [return_maps]),
   ToolName = maps:get(<<"tool">>, Decoded),
-  Repo = maps:get(<<"repo">>, Decoded),
-  {Token, _} = cowboy_req:cookie(<<"token">>, Req, ""),
-  Cred = egithub:oauth(Token),
-
-  Events = ["pull_request"],
 
   {ok, WebhookMap} = application:get_env(gadget, webhooks),
-  ToolsList = lists:map(fun atom_to_list/1, maps:keys(WebhookMap)),
-  Tool = binary_to_atom(ToolName, utf8),
-  Result = lists:member(atom_to_list(Tool), ToolsList),
-
-  case Result of
-    true ->
-      case Tool of
-        elvis -> gadget_elvis:on(Repo, Cred, Events, Tool);
-        _ -> throw("Invalid tool.")
-      end,
-      true;
+  case maps:get(binary_to_atom(ToolName, utf8), WebhookMap, false) of
     false ->
-      false
-  end,
-  {Result, Req1, State}.
+      {false, Req1, State};
+    WebhookUrl ->
+      Repo = maps:get(<<"repo">>, Decoded),
+      {Token, _} = cowboy_req:cookie(<<"token">>, Req, ""),
+      Cred = egithub:oauth(Token),
+      {ok, RepoInfo} = egithub:repo(Cred, Repo),
+      {ok, _Hook} =
+        egithub:create_webhook(Cred, Repo, WebhookUrl, ["pull_request"]),
+      {true, Req1, State}
+  end.
 
 -spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
 terminate(_Reason, _Req, _State) -> ok.
