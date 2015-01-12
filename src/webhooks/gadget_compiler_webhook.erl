@@ -41,10 +41,9 @@ clone_repo(GitUrl, RepoDir, Branch) ->
   Command =
     io_lib:format(
       "git clone -v -b ~s ~s ~s", [Branch, GitUrl, RepoDir]),
-  Result = os:cmd(Command),
-  lager:alert("~n~s", [Result]).
+  run_command(Command).
 
-ensure_dir_deleted(RepoDir) -> os:cmd("rm -r " ++ RepoDir).
+ensure_dir_deleted(RepoDir) -> run_command("rm -r " ++ RepoDir).
 
 ensure_dir(RepoDir) ->
   case filelib:ensure_dir(RepoDir) of
@@ -62,11 +61,17 @@ compile_project(RepoDir) ->
           false -> throw(cant_compile)
         end
     end,
-  lager:alert("~n~s", [Output]),
-  [].
+  Output.
 
 make_project(RepoDir) ->
-  os:cmd("cd " ++ RepoDir ++ "; V=1000 make").
+  run_command("cd " ++ RepoDir ++ "; V=1000 make").
 
 rebarize_project(RepoDir) ->
-  os:cmd("cd " ++ RepoDir ++ "; rebar --verbose get-deps compile").
+  run_command("cd " ++ RepoDir ++ "; rebar --verbose get-deps compile").
+
+run_command(Command) ->
+  lager:info("~s", [Command]),
+  Result = os:cmd(Command),
+  HR = [$~ || _ <- lists:seq(1, 80)],
+  lager:debug("~n~s~n$ ~s~n~s~n~s", [HR, Command, Result, HR]),
+  Result.
