@@ -24,8 +24,8 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
   try
     ensure_dir_deleted(RepoDir),
     clone_repo(GitUrl, RepoDir, Branch),
-    Messages = compile_project(RepoDir),
-    {ok, []}
+    Comments = compile_project(RepoDir),
+    {ok, messages_from_comments(Comments, GithubFiles)}
   catch
     _:Error ->
       lager:warning(
@@ -62,9 +62,7 @@ compile_project(RepoDir) ->
         end
     end,
   Lines = re:split(Output, "\n", [{return, binary}, trim]),
-  Errors = extract_errors(Lines),
-  lager:alert("~p ~n~n ~p", [Output, Errors]),
-  Errors.
+  extract_errors(Lines).
 
 make_project(RepoDir) ->
   run_command("cd " ++ RepoDir ++ "; V=1000 make").
@@ -88,9 +86,61 @@ extract_errors([Line|Lines], Regex, Errors) ->
   NewErrors =
     case re:run(Line, Regex, [{capture, all_but_first, binary}]) of
       {match, [File, Number, Comment]} ->
-        [#{file => File, number => Number, comment => Comment} | Errors];
+        [#{ file   => File
+          , number => binary_to_integer(Number)
+          , text   => Comment
+          } | Errors];
       {match, Something} -> lager:emergency("~p", [Something]);
       _ ->
         Errors
     end,
   extract_errors(Lines, Regex, NewErrors).
+
+messages_from_comments(Comments, GithubFiles) ->
+  lists:flatmap(
+    fun(Comment) ->
+      messages_from_comment(Comment, GithubFiles)
+    end, Comments).
+
+messages_from_comment(Comment, GithubFiles) ->
+  #{ file   := File
+   , number := Line
+   , text   := Text
+   } = Comment,
+  MatchingFiles =
+    [GithubFile
+    || #{ <<"filename">>  := Filename
+        , <<"status">>    := Status
+        } = GithubFile <- GithubFiles
+      , Filename == File
+      , Status /= <<"deleted">>
+    ],
+  case MatchingFiles of
+    [] -> [];
+    [MatchingFile|_] ->
+      messages_from_comment(File, Line, Text, MatchingFile)
+  end.
+
+messages_from_comment(Filename, Line, Text, File) ->
+  #{ <<"patch">>      := Patch
+   , <<"raw_url">>    := RawUrl
+   } = File,
+  case elvis_git:relative_position(Patch, Line) of
+    {ok, Position} ->
+      [ #{commit_id => commit_id_from_raw_url(RawUrl, Filename),
+          path      => Filename,
+          position  => Position,
+          text      => Text
+          }
+      ];
+    not_found ->
+      lager:info("Line ~p does not belong to file's diff.", [Line]),
+      []
+  end.
+
+%% @doc Gets a raw_url for a file and extracts the commit id from it.
+-spec commit_id_from_raw_url(binary(), binary()) -> string().
+commit_id_from_raw_url(Url, Filename) ->
+  Regex = <<".+/raw/(.+)/", Filename/binary>>,
+  {match, [CommitId]} = re:run(Url, Regex, [{capture, all_but_first, binary}]),
+  binary_to_list(CommitId).
