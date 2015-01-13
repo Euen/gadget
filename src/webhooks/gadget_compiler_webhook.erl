@@ -12,14 +12,15 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
  #{ <<"repository">> := Repository
     , <<"pull_request">> := PR
     } = ReqData,
-  #{  <<"name">>    := RepoName
+  #{  <<"full_name">> := RepoName
     , <<"git_url">> := GitUrl
     } = Repository,
   #{ <<"head">> :=
       #{ <<"ref">> := Branch}
     } = PR,
   TmpRoot = application:get_env(gadget, tmp_path, "/tmp/gadget"),
-  RepoDir = binary_to_list(filename:join(TmpRoot, RepoName)),
+  Now = unique_id(),
+  RepoDir = binary_to_list(filename:join([TmpRoot, RepoName, Now])),
 
   try
     ensure_dir_deleted(RepoDir),
@@ -144,3 +145,7 @@ commit_id_from_raw_url(Url, Filename) ->
   Regex = <<".+/raw/(.+)/", Filename/binary>>,
   {match, [CommitId]} = re:run(Url, Regex, [{capture, all_but_first, binary}]),
   binary_to_list(CommitId).
+
+unique_id() ->
+  {X, Y, Z} = os:timestamp(),
+  iolist_to_binary(io_lib:format("~7.10.0B-~7.10.0B-~7.10.0B", [X, Y, Z])).
