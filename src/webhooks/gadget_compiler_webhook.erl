@@ -12,7 +12,7 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
  #{ <<"repository">> := Repository
     , <<"pull_request">> := PR
     } = ReqData,
-  #{  <<"name">>    := RepoName
+  #{  <<"full_name">> := RepoName
     , <<"git_url">> := GitUrl
     } = Repository,
   #{ <<"head">> :=
