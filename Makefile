@@ -5,7 +5,7 @@ CONFIG ?= config/app.config
 DEPS = elvis cowboy lager sync erlydtl merl egithub shotgun eper
 
 dep_eper = git git://github.com/massemanet/eper.git 0.90.0
-dep_elvis = git git://github.com/inaka/elvis.git 0.2.5
+dep_elvis = git git://github.com/inaka/elvis.git 254b11740c23daa2e8ae97633fe01dd99db89a8f
 dep_cowboy = git git://github.com/extend/cowboy.git 1.0.0
 dep_lager = git git://github.com/basho/lager.git 2.1.0
 dep_sync = git git://github.com/inaka/sync.git 0.1
