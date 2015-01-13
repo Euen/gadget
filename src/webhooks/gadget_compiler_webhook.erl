@@ -67,7 +67,7 @@ make_project(RepoDir) ->
   run_command("cd " ++ RepoDir ++ "; V=1000 make").
 
 rebarize_project(RepoDir) ->
-  run_command("cd " ++ RepoDir ++ "; rebar get-deps compile"),
+  run_command("cd " ++ RepoDir ++ "; rebar --verbose get-deps compile"),
   run_command("cd " ++ RepoDir ++ "; rebar skip_deps=true clean compile").
 
 run_command(Command) ->
