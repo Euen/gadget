@@ -61,7 +61,10 @@ compile_project(RepoDir) ->
           false -> throw(cant_compile)
         end
     end,
-  Output.
+  Lines = re:split(Output, "\n", [{return, binary}, trim]),
+  Errors = extract_errors(Lines),
+  lager:alert("~p ~n~n ~p", [Output, Errors]),
+  Errors.
 
 make_project(RepoDir) ->
   run_command("cd " ++ RepoDir ++ "; V=1000 make").
@@ -76,3 +79,18 @@ run_command(Command) ->
   HR = [$~ || _ <- lists:seq(1, 80)],
   lager:debug("~n~s~n$ ~s~n~s~n~s", [HR, Command, Result, HR]),
   Result.
+
+extract_errors(Lines) ->
+  {ok, Regex} = re:compile(<<"(.+):([0-9]*): (.+)">>),
+  extract_errors(Lines, Regex, []).
+extract_errors([], _Regex, Errors) -> Errors;
+extract_errors([Line|Lines], Regex, Errors) ->
+  NewErrors =
+    case re:run(Line, Regex, [{capture, all_but_first, binary}]) of
+      {match, [File, Number, Comment]} ->
+        [#{file => File, number => Number, comment => Comment} | Errors];
+      {match, Something} -> lager:emergency("~p", [Something]);
+      _ ->
+        Errors
+    end,
+  extract_errors(Lines, Regex, NewErrors).
