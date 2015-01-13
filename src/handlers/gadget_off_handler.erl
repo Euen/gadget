@@ -34,20 +34,19 @@ delete_resource(Req, State) ->
   Cred = egithub:oauth(Token),
 
   {ok, WebhookMap} = application:get_env(gadget, webhooks),
-  ToolName = binary_to_atom(ToolNameBin, utf8),
-  {ok, Username} = application:get_env(gadget, github_user),
-  ok = remove_user(Cred, Repo, Username),
+  Tool = binary_to_atom(ToolNameBin, utf8),
   {ok, Hooks} = egithub:hooks(Cred, Repo),
   EnabledTools = gadget_utils:enabled_tools(WebhookMap, Hooks),
-  HId =
+  HIds =
     [HookId
-    ||  #{ hook_id := HookId
-         , name := ToolName1
-         , status := Status} <- EnabledTools
-     , ToolName1 == ToolName
-     , Status == on],
+     || #{ hook_id := HookId
+         , name    := ToolName
+         , status  := on
+         } <- EnabledTools
+     , ToolName == Tool
+     ],
   ok =
-    case HId of
+    case HIds of
       [] -> ok;
       [Id] -> egithub:delete_webhook(Cred, Repo, Id)
     end,
@@ -55,20 +54,3 @@ delete_resource(Req, State) ->
 
 -spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
 terminate(_Reason, _Req, _State) -> ok.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Private
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% @doc Only remove the user if the repo belongs to a user, otherwise the
-%%      the user should not be removed from the Services team just in case
-%%      it is being used in another project from the same organisation.
-remove_user(Cred, Repo, Username) ->
-  {ok, RepoInfo} = egithub:repo(Cred, Repo),
-  Owner = maps:get(<<"owner">>, RepoInfo),
-  #{<<"type">> := Type} = Owner,
-
-  case Type of
-    <<"User">> -> egithub:remove_collaborator(Cred, Repo, Username);
-    _Org -> ok
-  end.
