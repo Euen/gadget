@@ -69,8 +69,15 @@ make_project(RepoDir) ->
   run_command("cd " ++ RepoDir ++ "; V=1000 make").
 
 rebarize_project(RepoDir) ->
-  run_command("cd " ++ RepoDir ++ "; rebar --verbose get-deps compile"),
-  run_command("cd " ++ RepoDir ++ "; rebar skip_deps=true clean compile").
+  Rebar =
+    case os:find_executable("rebar") of
+      false -> filename:absname("deps/rebar/rebar");
+      Exec -> Exec
+    end,
+  run_command(
+    "cd " ++ RepoDir ++ "; " ++ Rebar ++ " --verbose get-deps compile"),
+  run_command(
+    "cd " ++ RepoDir ++ "; " ++ Rebar ++ " skip_deps=true clean compile").
 
 run_command(Command) ->
   lager:info("~s", [Command]),
