@@ -8,8 +8,9 @@
     {github_client_secret, "98vb98nbsbfgdjdlh87s986s08724958nfgdv"},
     %% Webhooks
     {webhooks,
-      #{elvis => "http://gadget.inakalabs.com/webhooks/elvis",
-        compiler => "http://gadget.inakalabs.com/webhooks/compiler"
+      #{elvis     => "http://gadget.inakalabs.com/webhooks/elvis",
+        compiler  => "http://gadget.inakalabs.com/webhooks/compiler",
+        xref      => "http://gadget.inakalabs.com/webhook/xref"
        }
     },
     %% Basic Auth

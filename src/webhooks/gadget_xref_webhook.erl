@@ -1,4 +1,4 @@
--module(gadget_compiler_webhook).
+-module(gadget_xref_webhook).
 
 -behaviour(egithub_webhook).
 
@@ -33,7 +33,8 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
 process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
-    Comments = extract_errors(gadget_utils:compile_project(RepoDir)),
+    gadget_utils:compile_project(RepoDir),
+    Comments = [],
     {ok, gadget_utils:messages_from_comments(Comments, GithubFiles)}
   catch
     _:Error ->
@@ -47,21 +48,3 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
   after
     gadget_utils:ensure_dir_deleted(RepoDir)
   end.
-
-extract_errors(Lines) ->
-  {ok, Regex} = re:compile(<<"(.+):([0-9]*): (.+)">>),
-  extract_errors(Lines, Regex, []).
-extract_errors([], _Regex, Errors) -> Errors;
-extract_errors([Line|Lines], Regex, Errors) ->
-  NewErrors =
-    case re:run(Line, Regex, [{capture, all_but_first, binary}]) of
-      {match, [File, Number, Comment]} ->
-        [#{ file   => File
-          , number => binary_to_integer(Number)
-          , text   => Comment
-          } | Errors];
-      {match, Something} -> lager:emergency("~p", [Something]);
-      _ ->
-        Errors
-    end,
-  extract_errors(Lines, Regex, NewErrors).

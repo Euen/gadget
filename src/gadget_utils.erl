@@ -4,11 +4,20 @@
         , tool_info/3
         , is_public/1
         , is_admin/1
+        , ensure_repo_dir/1
+        , clone_repo/3
+        , ensure_dir_deleted/1
+        , run_command/1
+        , unique_id/0
+        , compile_project/1
+        , messages_from_comments/2
         ]).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Public
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-type comment() :: #{file   => string(),
+                     number => pos_integer(),
+                     text   => binary()
+                    }.
+-export_type([comment/0]).
 
 -spec enabled_tools(map(), [map()]) -> [atom()].
 enabled_tools(Tools, Hooks) ->
@@ -47,3 +56,123 @@ is_public(#{<<"private">> := Private}) -> not Private.
 -spec is_admin(map()) -> boolean().
 is_admin(#{<<"permissions">> := #{<<"admin">> := true}}) -> true;
 is_admin(_Repo) -> false.
+
+-spec ensure_repo_dir(binary()) -> file:name_all().
+ensure_repo_dir(RepoName) ->
+  TmpRoot = application:get_env(gadget, tmp_path, "/tmp/gadget"),
+  Now = unique_id(),
+  RepoDir = binary_to_list(filename:join([TmpRoot, RepoName, Now])),
+  ensure_dir_deleted(RepoDir),
+  ensure_dir(RepoDir),
+  RepoDir.
+
+-spec clone_repo(file:name_all(), binary(), binary()) -> ok.
+clone_repo(RepoDir, Branch, GitUrl) ->
+  Command =
+    io_lib:format(
+      "git clone -v -b ~s ~s ~s", [Branch, GitUrl, RepoDir]),
+  run_command(Command),
+  ok.
+
+-spec ensure_dir_deleted(file:name_all()) -> string().
+ensure_dir_deleted(RepoDir) -> run_command("rm -r " ++ RepoDir).
+
+ensure_dir(RepoDir) ->
+  case filelib:ensure_dir(RepoDir) of
+    ok -> ok;
+    {error, Error} -> throw(Error)
+  end.
+
+-spec run_command(iodata()) -> string().
+run_command(Command) ->
+  lager:info("~s", [Command]),
+  Result = os:cmd(Command),
+  HR = [$~ || _ <- lists:seq(1, 80)],
+  lager:debug("~n~s~n$ ~s~n~s~n~s", [HR, Command, Result, HR]),
+  Result.
+
+-spec unique_id() -> binary().
+unique_id() ->
+  {X, Y, Z} = os:timestamp(),
+  iolist_to_binary(io_lib:format("~7.10.0B-~7.10.0B-~7.10.0B", [X, Y, Z])).
+
+-spec compile_project(file:name_all()) -> [string()].
+compile_project(RepoDir) ->
+  Output =
+    case filelib:is_regular(filename:join(RepoDir, "Makefile")) of
+      true -> make_project(RepoDir);
+      false ->
+        case filelib:is_regular(filename:join(RepoDir, "rebar.config")) of
+          true -> rebarize_project(RepoDir);
+          false ->
+            lager:warning(
+              "No Makefile nor rebar.config in ~p:\n\t~s",
+              [RepoDir, filelib:wildcard(filename:join(RepoDir, "*"))]),
+            throw(cant_compile)
+        end
+    end,
+  re:split(Output, "\n", [{return, binary}, trim]).
+
+make_project(RepoDir) ->
+  gadget_utils:run_command("cd " ++ RepoDir ++ "; V=1000 make").
+
+rebarize_project(RepoDir) ->
+  Rebar =
+    case os:find_executable("rebar") of
+      false -> filename:absname("deps/rebar/rebar");
+      Exec -> Exec
+    end,
+  gadget_utils:run_command(
+    "cd " ++ RepoDir ++ "; " ++ Rebar ++ " --verbose get-deps compile"),
+  gadget_utils:run_command(
+    "cd " ++ RepoDir ++ "; " ++ Rebar ++ " skip_deps=true clean compile").
+
+-spec messages_from_comments([comment()], [egithub_webhook:file()]) ->
+  [egithub_webhook:messge()].
+messages_from_comments(Comments, GithubFiles) ->
+  lists:flatmap(
+    fun(Comment) ->
+      messages_from_comment(Comment, GithubFiles)
+    end, Comments).
+
+messages_from_comment(Comment, GithubFiles) ->
+  #{ file   := File
+   , number := Line
+   , text   := Text
+   } = Comment,
+  MatchingFiles =
+    [GithubFile
+    || #{ <<"filename">>  := Filename
+        , <<"status">>    := Status
+        } = GithubFile <- GithubFiles
+      , Filename == File
+      , Status /= <<"deleted">>
+    ],
+  case MatchingFiles of
+    [] -> [];
+    [MatchingFile|_] ->
+      messages_from_comment(File, Line, Text, MatchingFile)
+  end.
+
+messages_from_comment(Filename, Line, Text, File) ->
+  #{ <<"patch">>      := Patch
+   , <<"raw_url">>    := RawUrl
+   } = File,
+  case elvis_git:relative_position(Patch, Line) of
+    {ok, Position} ->
+      [ #{commit_id => commit_id_from_raw_url(RawUrl, Filename),
+          path      => Filename,
+          position  => Position,
+          text      => Text
+          }
+      ];
+    not_found ->
+      lager:info("Line ~p does not belong to file's diff.", [Line]),
+      []
+  end.
+
+%% @doc Gets a raw_url for a file and extracts the commit id from it.
+commit_id_from_raw_url(Url, Filename) ->
+  Regex = <<".+/raw/(.+)/", Filename/binary>>,
+  {match, [CommitId]} = re:run(Url, Regex, [{capture, all_but_first, binary}]),
+  binary_to_list(CommitId).

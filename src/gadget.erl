@@ -34,6 +34,8 @@ start() ->
 -spec webhook(atom(), map()) -> ok | {error, term()}.
 webhook(<<"compiler">>, RequestMap) ->
   do_webhook(gadget_compiler_webhook, RequestMap);
+webhook(<<"xref">>, RequestMap) ->
+  do_webhook(gadget_xref_webhook, RequestMap);
 webhook(<<"elvis">>, RequestMap) ->
   do_webhook(elvis_webhook, RequestMap).
 
