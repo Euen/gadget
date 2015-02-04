@@ -25,25 +25,32 @@ handle(Req, State) ->
       {ok, Req2, State};
     {Token, _} ->
       Cred = egithub:oauth(Token),
-      {ok, User} = egithub:user(Cred),
-      Name = maps:get(<<"name">>, User, null),
-      Username =
-        case Name of
-          null -> maps:get(<<"login">>, User);
-          Name1 -> Name1
-        end,
-      Repos = repositories(Cred),
-      WebhookMap = application:get_env(gadget, webhooks, #{}),
-      Tools = maps:keys(WebhookMap),
-      Variables = [ {tools, Tools}
-                  , {user,  Username}
-                  , {repos, Repos}
-                  ],
+      case egithub:user(Cred) of
+        {ok, User} ->
+          Name = maps:get(<<"name">>, User, null),
+          Username =
+            case Name of
+              null -> maps:get(<<"login">>, User);
+              Name1 -> Name1
+            end,
+          Repos = repositories(Cred),
+          WebhookMap = application:get_env(gadget, webhooks, #{}),
+          Tools = maps:keys(WebhookMap),
+          Variables = [ {tools, Tools}
+                      , {user,  Username}
+                      , {repos, Repos}
+                      ],
 
-      Headers = [{<<"content-type">>, <<"text/html">>}],
-      {ok, Body} = repos_dtl:render(Variables),
-      {ok, Req2} = cowboy_req:reply(200, Headers, Body, Req),
-      {ok, Req2, State}
+          Headers = [{<<"content-type">>, <<"text/html">>}],
+          {ok, Body} = repos_dtl:render(Variables),
+          {ok, Req2} = cowboy_req:reply(200, Headers, Body, Req),
+          {ok, Req2, State};
+        {error, {"401", _, _}} ->
+          Headers = [{<<"location">>, <<"/login">>}],
+          Body = <<"You must log in to github first">>,
+          {ok, Req2} = cowboy_req:reply(302, Headers, Body, Req),
+          {ok, Req2, State}
+      end
   end.
 
 -spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
