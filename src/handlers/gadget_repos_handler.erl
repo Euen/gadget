@@ -18,38 +18,44 @@ init(_Type, Req, _Opts) ->
 
 -spec handle(cowboy_req:req(), #state{}) -> ok.
 handle(Req, State) ->
-  case cowboy_req:cookie(<<"token">>, Req, undefined) of
-    {undefined, _} ->
+  case get_user(Req) of
+    {ok, User, Cred} ->
+      Name = maps:get(<<"name">>, User, null),
+      Username =
+        case Name of
+          null -> maps:get(<<"login">>, User);
+          Name1 -> Name1
+        end,
+      Repos = repositories(Cred),
+      WebhookMap = application:get_env(gadget, webhooks, #{}),
+      Tools = maps:keys(WebhookMap),
+      Variables = [ {tools, Tools}
+                  , {user,  Username}
+                  , {repos, Repos}
+                  ],
+
+      Headers = [{<<"content-type">>, <<"text/html">>}],
+      {ok, Body} = repos_dtl:render(Variables),
+      {ok, Req2} = cowboy_req:reply(200, Headers, Body, Req),
+      {ok, Req2, State};
+    not_found ->
       Headers = [{<<"Location">>, <<"/">>}],
       {ok, Req2} = cowboy_req:reply(302, Headers, Req),
       {ok, Req2, State};
+    unauthorized ->
+      Headers = [{<<"location">>, <<"/login">>}],
+      {ok, Req2} = cowboy_req:reply(302, Headers, Req),
+      {ok, Req2, State}
+  end.
+
+get_user(Req) ->
+  case cowboy_req:cookie(<<"token">>, Req, undefined) of
+    {undefined, _} -> not_found;
     {Token, _} ->
       Cred = egithub:oauth(Token),
       case egithub:user(Cred) of
-        {ok, User} ->
-          Name = maps:get(<<"name">>, User, null),
-          Username =
-            case Name of
-              null -> maps:get(<<"login">>, User);
-              Name1 -> Name1
-            end,
-          Repos = repositories(Cred),
-          WebhookMap = application:get_env(gadget, webhooks, #{}),
-          Tools = maps:keys(WebhookMap),
-          Variables = [ {tools, Tools}
-                      , {user,  Username}
-                      , {repos, Repos}
-                      ],
-
-          Headers = [{<<"content-type">>, <<"text/html">>}],
-          {ok, Body} = repos_dtl:render(Variables),
-          {ok, Req2} = cowboy_req:reply(200, Headers, Body, Req),
-          {ok, Req2, State};
-        {error, {"401", _, _}} ->
-          Headers = [{<<"location">>, <<"/login">>}],
-          Body = <<"You must log in to github first">>,
-          {ok, Req2} = cowboy_req:reply(302, Headers, Body, Req),
-          {ok, Req2, State}
+        {ok, User} -> {ok, User, Cred};
+        {error, {"401", _, _}} -> unauthorized
       end
   end.
 
