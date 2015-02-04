@@ -18,14 +18,8 @@ init(_Type, Req, _Opts) ->
 
 -spec handle(cowboy_req:req(), #state{}) -> ok.
 handle(Req, State) ->
-  case cowboy_req:cookie(<<"token">>, Req, undefined) of
-    {undefined, _} ->
-      Headers = [{<<"Location">>, <<"/">>}],
-      {ok, Req2} = cowboy_req:reply(302, Headers, Req),
-      {ok, Req2, State};
-    {Token, _} ->
-      Cred = egithub:oauth(Token),
-      {ok, User} = egithub:user(Cred),
+  case get_user(Req) of
+    {ok, User, Cred} ->
       Name = maps:get(<<"name">>, User, null),
       Username =
         case Name of
@@ -43,7 +37,26 @@ handle(Req, State) ->
       Headers = [{<<"content-type">>, <<"text/html">>}],
       {ok, Body} = repos_dtl:render(Variables),
       {ok, Req2} = cowboy_req:reply(200, Headers, Body, Req),
+      {ok, Req2, State};
+    not_found ->
+      Headers = [{<<"Location">>, <<"/">>}],
+      {ok, Req2} = cowboy_req:reply(302, Headers, Req),
+      {ok, Req2, State};
+    unauthorized ->
+      Headers = [{<<"location">>, <<"/login">>}],
+      {ok, Req2} = cowboy_req:reply(302, Headers, Req),
       {ok, Req2, State}
+  end.
+
+get_user(Req) ->
+  case cowboy_req:cookie(<<"token">>, Req, undefined) of
+    {undefined, _} -> not_found;
+    {Token, _} ->
+      Cred = egithub:oauth(Token),
+      case egithub:user(Cred) of
+        {ok, User} -> {ok, User, Cred};
+        {error, {"401", _, _}} -> unauthorized
+      end
   end.
 
 -spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
