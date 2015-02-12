@@ -7,7 +7,7 @@
 -spec handle_pull_request(
         egithub:credentials(), egithub_webhook:req_data(),
         [egithub_webhook:file()]) ->
-        {ok, [egithub_webhook:messge()]} | {error, term()}.
+        {ok, [egithub_webhook:message()]} | {error, term()}.
 handle_pull_request(Cred, ReqData, GithubFiles) ->
   #{  <<"repository">> := Repository
     , <<"pull_request">> := PR
@@ -34,7 +34,7 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
     gadget_utils:compile_project(RepoDir),
-    Comments = [],
+    Comments = xref_project(RepoDir),
     {ok, gadget_utils:messages_from_comments(Comments, GithubFiles)}
   catch
     _:Error ->
@@ -48,3 +48,25 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
   after
     gadget_utils:ensure_dir_deleted(RepoDir)
   end.
+
+xref_project(RepoDir) ->
+  {ok, RepoNode} = start_node(RepoDir),
+  ok = set_cwd(RepoNode, RepoDir),
+  XrefResult = run_xref(RepoNode),
+  generate_comments(XrefResult).
+
+start_node(RepoDir) ->
+  UniqueId = filename:basename(RepoDir),
+  NodeName = list_to_atom(UniqueId),
+  [_, HostBin] = binary:split(atom_to_binary(node(), utf8), <<"@">>),
+  Host = binary_to_atom(HostBin, 2),
+  slave:start_link(Host, NodeName).
+
+set_cwd(RepoNode, RepoDir) ->
+  rpc:call(RepoNode, file, set_cwd, [RepoDir]).
+
+run_xref(RepoNode) ->
+  RunnerEbin = filename:dirname(code:which(xref_runner)),
+  true = rpc:call(RepoNode, code, add_path, [RunnerEbin]),
+  rpc:call(RepoNode, xref_runner, check, []).
+

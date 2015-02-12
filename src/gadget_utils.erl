@@ -128,7 +128,7 @@ rebarize_project(RepoDir) ->
     "cd " ++ RepoDir ++ "; " ++ Rebar ++ " skip_deps=true clean compile").
 
 -spec messages_from_comments([comment()], [egithub_webhook:file()]) ->
-  [egithub_webhook:messge()].
+  [egithub_webhook:message()].
 messages_from_comments(Comments, GithubFiles) ->
   lists:flatmap(
     fun(Comment) ->

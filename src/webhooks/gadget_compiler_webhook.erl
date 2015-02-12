@@ -7,7 +7,7 @@
 -spec handle_pull_request(
         egithub:credentials(), egithub_webhook:req_data(),
         [egithub_webhook:file()]) ->
-        {ok, [egithub_webhook:messge()]} | {error, term()}.
+        {ok, [egithub_webhook:message()]} | {error, term()}.
 handle_pull_request(Cred, ReqData, GithubFiles) ->
   #{  <<"repository">> := Repository
     , <<"pull_request">> := PR
