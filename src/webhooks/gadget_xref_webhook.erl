@@ -52,14 +52,18 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
 xref_project(RepoDir) ->
   {ok, RepoNode} = start_node(RepoDir),
   ok = set_cwd(RepoNode, RepoDir),
-  XrefResult = run_xref(RepoNode),
-  generate_comments(XrefResult).
+  XrefWarnings = run_xref(RepoNode),
+  stop_node(RepoNode),
+  [generate_comment(RepoDir, XrefWarning) || XrefWarning <- XrefWarnings].
+
+stop_node(RepoNode) ->
+  slave:stop(RepoNode).
 
 start_node(RepoDir) ->
   UniqueId = filename:basename(RepoDir),
   NodeName = list_to_atom(UniqueId),
   [_, HostBin] = binary:split(atom_to_binary(node(), utf8), <<"@">>),
-  Host = binary_to_atom(HostBin, 2),
+  Host = binary_to_atom(HostBin, utf8),
   slave:start_link(Host, NodeName).
 
 set_cwd(RepoNode, RepoDir) ->
@@ -70,3 +74,33 @@ run_xref(RepoNode) ->
   true = rpc:call(RepoNode, code, add_path, [RunnerEbin]),
   rpc:call(RepoNode, xref_runner, check, []).
 
+generate_comment(RepoDir, XrefWarning) ->
+  #{ filename := Filename
+   , line     := Line
+   , source   := Source
+   , check    := Check
+   } = XrefWarning,
+  Target = maps:get(target, XrefWarning, undefined),
+  #{ file   => re:replace(Filename, [$^ | RepoDir], "", [{return, list}])
+   , number => Line
+   , text   => iolist_to_binary(generate_comment_text(Check, Source, Target))
+   }.
+
+generate_comment_text(Check, {SM, SF, SA}, TMFA) ->
+  SMFA = io_lib:format("~p:~p/~p", [SM, SF, SA]),
+  generate_comment_text(Check, SMFA, TMFA);
+generate_comment_text(Check, SMFA, {TM, TF, TA}) ->
+  TMFA = io_lib:format("~p:~p/~p", [TM, TF, TA]),
+  generate_comment_text(Check, SMFA, TMFA);
+generate_comment_text(undefined_function_calls, SMFA, TMFA) ->
+  io_lib:format("~s calls undefined function ~s", [SMFA, TMFA]);
+generate_comment_text(undefined_functions, SMFA, _TMFA) ->
+  io_lib:format("~s is undefined function", [SMFA]);
+generate_comment_text(locals_not_used, SMFA, _TMFA) ->
+  io_lib:format("~s is unused local function", [SMFA]);
+generate_comment_text(exports_not_used, SMFA, _TMFA) ->
+  io_lib:format("~s is unused export", [SMFA]);
+generate_comment_text(deprecated_function_calls, SMFA, TMFA) ->
+  io_lib:format("~s calls deprecated function ~s", [SMFA, TMFA]);
+generate_comment_text(deprecated_functions, SMFA, _TMFA) ->
+  io_lib:format("~s is deprecated function", [SMFA]).
