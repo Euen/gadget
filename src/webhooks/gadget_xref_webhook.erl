@@ -50,21 +50,29 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
   end.
 
 xref_project(RepoDir) ->
-  {ok, RepoNode} = start_node(RepoDir),
-  ok = set_cwd(RepoNode, RepoDir),
-  XrefWarnings = run_xref(RepoNode),
-  stop_node(RepoNode),
-  [generate_comment(RepoDir, XrefWarning) || XrefWarning <- XrefWarnings].
+  RepoNode = start_node(RepoDir),
+  try
+    ok = set_cwd(RepoNode, RepoDir),
+    XrefWarnings = run_xref(RepoNode),
+    [generate_comment(RepoDir, XrefWarning) || XrefWarning <- XrefWarnings]
+  after
+    stop_node(RepoNode)
+  end.
 
 stop_node(RepoNode) ->
-  slave:stop(RepoNode).
+  gadget_slave:stop(RepoNode).
 
 start_node(RepoDir) ->
   UniqueId = filename:basename(RepoDir),
-  NodeName = list_to_atom(UniqueId),
-  [_, HostBin] = binary:split(atom_to_binary(node(), utf8), <<"@">>),
-  Host = binary_to_atom(HostBin, utf8),
-  slave:start_link(Host, NodeName).
+  NodeName =
+    case binary:split(atom_to_binary(node(), utf8), <<"@">>) of
+      [_, HostName] ->
+        binary_to_atom(iolist_to_binary([UniqueId, $@, HostName]), utf8);
+      _JustNodeName ->
+        list_to_atom(UniqueId)
+    end,
+  {ok, _} = gadget_slave:start(NodeName),
+  NodeName.
 
 set_cwd(RepoNode, RepoDir) ->
   rpc:call(RepoNode, file, set_cwd, [RepoDir]).
@@ -81,7 +89,7 @@ generate_comment(RepoDir, XrefWarning) ->
    , check    := Check
    } = XrefWarning,
   Target = maps:get(target, XrefWarning, undefined),
-  #{ file   => re:replace(Filename, [$^ | RepoDir], "", [{return, list}])
+  #{ file   => re:replace(Filename, [$^ | RepoDir], "", [{return, binary}])
    , number => Line
    , text   => iolist_to_binary(generate_comment_text(Check, Source, Target))
    }.

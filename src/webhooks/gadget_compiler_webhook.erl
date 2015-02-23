@@ -60,7 +60,7 @@ extract_errors([Line|Lines], Regex, Errors) ->
           , number => binary_to_integer(Number)
           , text   => Comment
           } | Errors];
-      {match, Something} -> lager:emergency("~p", [Something]);
+      {match, Something} -> lager:error("WHAT? ~p", [Something]);
       _ ->
         Errors
     end,
