@@ -94,21 +94,26 @@ generate_comment(RepoDir, XrefWarning) ->
    , text   => iolist_to_binary(generate_comment_text(Check, Source, Target))
    }.
 
-generate_comment_text(Check, {SM, SF, SA}, TMFA) ->
-  SMFA = io_lib:format("~p:~p/~p", [SM, SF, SA]),
-  generate_comment_text(Check, SMFA, TMFA);
-generate_comment_text(Check, SMFA, {TM, TF, TA}) ->
-  TMFA = io_lib:format("~p:~p/~p", [TM, TF, TA]),
-  generate_comment_text(Check, SMFA, TMFA);
-generate_comment_text(undefined_function_calls, SMFA, TMFA) ->
+generate_comment_text(Check, Source, Target) ->
+  [ "According to **Xref**:\n> "
+  , do_generate_comment_text(Check, Source, Target)
+  ].
+
+do_generate_comment_text(Check, {SM, SF, SA}, TMFA) ->
+  SMFA = io_lib:format("`~p:~p/~p`", [SM, SF, SA]),
+  do_generate_comment_text(Check, SMFA, TMFA);
+do_generate_comment_text(Check, SMFA, {TM, TF, TA}) ->
+  TMFA = io_lib:format("`~p:~p/~p`", [TM, TF, TA]),
+  do_generate_comment_text(Check, SMFA, TMFA);
+do_generate_comment_text(undefined_function_calls, SMFA, TMFA) ->
   io_lib:format("~s calls undefined function ~s", [SMFA, TMFA]);
-generate_comment_text(undefined_functions, SMFA, _TMFA) ->
-  io_lib:format("~s is undefined function", [SMFA]);
-generate_comment_text(locals_not_used, SMFA, _TMFA) ->
-  io_lib:format("~s is unused local function", [SMFA]);
-generate_comment_text(exports_not_used, SMFA, _TMFA) ->
-  io_lib:format("~s is unused export", [SMFA]);
-generate_comment_text(deprecated_function_calls, SMFA, TMFA) ->
+do_generate_comment_text(undefined_functions, SMFA, _TMFA) ->
+  io_lib:format("~s is not defined as a function", [SMFA]);
+do_generate_comment_text(locals_not_used, SMFA, _TMFA) ->
+  io_lib:format("~s is an unused local function", [SMFA]);
+do_generate_comment_text(exports_not_used, SMFA, _TMFA) ->
+  io_lib:format("~s is an unused export", [SMFA]);
+do_generate_comment_text(deprecated_function_calls, SMFA, TMFA) ->
   io_lib:format("~s calls deprecated function ~s", [SMFA, TMFA]);
-generate_comment_text(deprecated_functions, SMFA, _TMFA) ->
-  io_lib:format("~s is deprecated function", [SMFA]).
+do_generate_comment_text(deprecated_functions, SMFA, _TMFA) ->
+  io_lib:format("~s is deprecated", [SMFA]).
