@@ -17,7 +17,7 @@ init({}) ->
     { {one_for_one, 5, 10}
     , [ { gadget_slave_sup
         , {gadget_slave_sup, start_link, []}
-        , permanent, 1000, worker, [gadget_slave_sup]
+        , permanent, 1000, supervisor, [gadget_slave_sup]
         }
       ]
     }}.
