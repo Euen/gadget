@@ -35,6 +35,7 @@ init(NodeName) ->
   Erl = os:find_executable("erl"),
   SlaveNode = atom_to_list(NodeName),
   ok = net_kernel:monitor_nodes(true, [nodedown_reason]),
+  Ping = iolist_to_binary(io_lib:format("net_adm:ping(~p)", [node()])),
   Port =
     erlang:open_port(
       {spawn_executable, Erl},
@@ -44,7 +45,7 @@ init(NodeName) ->
         [ "-name" , SlaveNode
         , "-setcookie", erlang:get_cookie()
         , "-noshell"
-        , "-s", "net_adm", "world"
+        , "-eval", Ping
         ]}
       ]),
   wait_for_node(#{slave_port => Port, slave_node => NodeName}).
