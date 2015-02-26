@@ -9,7 +9,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -spec start_link() -> supervisor:startlink_ret().
-start_link() -> supervisor:start_link(?MODULE, {}).
+start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, {}).
 
 -spec init(term()) -> term().
-init({}) -> {ok, {{one_for_one, 5, 10}, []}}.
+init({}) ->
+  {ok,
+    { {one_for_one, 5, 10}
+    , [ { gadget_slave_sup
+        , {gadget_slave_sup, start_link, []}
+        , permanent, 1000, supervisor, [gadget_slave_sup]
+        }
+      ]
+    }}.

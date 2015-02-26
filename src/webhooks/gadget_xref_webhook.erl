@@ -1,0 +1,119 @@
+-module(gadget_xref_webhook).
+
+-behaviour(egithub_webhook).
+
+-export([handle_pull_request/3]).
+
+-spec handle_pull_request(
+        egithub:credentials(), egithub_webhook:req_data(),
+        [egithub_webhook:file()]) ->
+        {ok, [egithub_webhook:message()]} | {error, term()}.
+handle_pull_request(Cred, ReqData, GithubFiles) ->
+  #{  <<"repository">> := Repository
+    , <<"pull_request">> := PR
+    } = ReqData,
+  #{  <<"full_name">> := RepoName
+    , <<"git_url">> := GitUrl
+    } = Repository,
+  #{ <<"head">> :=
+      #{ <<"ref">> := Branch}
+    } = PR,
+
+  try gadget_utils:ensure_repo_dir(RepoName) of
+    RepoDir ->
+      process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles)
+  catch
+    _:Error ->
+      lager:warning(
+        "Couldn't clone project: ~p~nParams: ~p~nStack: ~p",
+        [Error, [Cred, ReqData, GithubFiles], erlang:get_stacktrace()]),
+      {error, Error}
+  end.
+
+process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
+  try
+    ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
+    gadget_utils:compile_project(RepoDir),
+    Comments = xref_project(RepoDir),
+    {ok, gadget_utils:messages_from_comments(Comments, GithubFiles)}
+  catch
+    _:Error ->
+      lager:warning(
+        "Couldn't process PR: ~p~nParams: ~p~nStack: ~p",
+        [ Error
+        , [RepoDir, RepoName, Branch, GitUrl, GithubFiles]
+        , erlang:get_stacktrace()
+        ]),
+      {error, Error}
+  after
+    gadget_utils:ensure_dir_deleted(RepoDir)
+  end.
+
+xref_project(RepoDir) ->
+  RepoNode = start_node(RepoDir),
+  try
+    ok = set_cwd(RepoNode, RepoDir),
+    XrefWarnings = run_xref(RepoNode),
+    [generate_comment(RepoDir, XrefWarning) || XrefWarning <- XrefWarnings]
+  after
+    stop_node(RepoNode)
+  end.
+
+stop_node(RepoNode) ->
+  gadget_slave:stop(RepoNode).
+
+start_node(RepoDir) ->
+  UniqueId = filename:basename(RepoDir),
+  NodeName =
+    case binary:split(atom_to_binary(node(), utf8), <<"@">>) of
+      [_, HostName] ->
+        binary_to_atom(iolist_to_binary([UniqueId, $@, HostName]), utf8);
+      _JustNodeName ->
+        list_to_atom(UniqueId)
+    end,
+  {ok, _} = gadget_slave:start(NodeName),
+  NodeName.
+
+set_cwd(RepoNode, RepoDir) ->
+  rpc:call(RepoNode, file, set_cwd, [RepoDir]).
+
+run_xref(RepoNode) ->
+  RunnerEbin = filename:dirname(code:which(xref_runner)),
+  true = rpc:call(RepoNode, code, add_path, [RunnerEbin]),
+  rpc:call(RepoNode, xref_runner, check, []).
+
+generate_comment(RepoDir, XrefWarning) ->
+  #{ filename := Filename
+   , line     := Line
+   , source   := Source
+   , check    := Check
+   } = XrefWarning,
+  Target = maps:get(target, XrefWarning, undefined),
+  #{ file   => re:replace(Filename, [$^ | RepoDir], "", [{return, binary}])
+   , number => Line
+   , text   => iolist_to_binary(generate_comment_text(Check, Source, Target))
+   }.
+
+generate_comment_text(Check, Source, Target) ->
+  [ "According to **Xref**:\n> "
+  , do_generate_comment_text(Check, Source, Target)
+  ].
+
+do_generate_comment_text(Check, {SM, SF, SA}, TMFA) ->
+  SMFA = io_lib:format("`~p:~p/~p`", [SM, SF, SA]),
+  do_generate_comment_text(Check, SMFA, TMFA);
+do_generate_comment_text(Check, SMFA, {TM, TF, TA}) ->
+  TMFA = io_lib:format("`~p:~p/~p`", [TM, TF, TA]),
+  do_generate_comment_text(Check, SMFA, TMFA);
+do_generate_comment_text(undefined_function_calls, SMFA, TMFA) ->
+  io_lib:format("~s calls undefined function ~s", [SMFA, TMFA]);
+do_generate_comment_text(undefined_functions, SMFA, _TMFA) ->
+  io_lib:format("~s is not defined as a function", [SMFA]);
+do_generate_comment_text(locals_not_used, SMFA, _TMFA) ->
+  io_lib:format("~s is an unused local function", [SMFA]);
+do_generate_comment_text(exports_not_used, SMFA, _TMFA) ->
+  io_lib:format("~s is an unused export", [SMFA]);
+do_generate_comment_text(deprecated_function_calls, SMFA, TMFA) ->
+  io_lib:format("~s calls deprecated function ~s", [SMFA, TMFA]);
+do_generate_comment_text(deprecated_functions, SMFA, _TMFA) ->
+  io_lib:format("~s is deprecated", [SMFA]).
