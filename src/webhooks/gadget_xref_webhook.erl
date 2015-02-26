@@ -25,7 +25,7 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
   catch
     _:Error ->
       lager:warning(
-        "Couldn't cclone project: ~p~nParams: ~p~nStack: ~p",
+        "Couldn't clone project: ~p~nParams: ~p~nStack: ~p",
         [Error, [Cred, ReqData, GithubFiles], erlang:get_stacktrace()]),
       {error, Error}
   end.
