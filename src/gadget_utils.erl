@@ -87,7 +87,7 @@ ensure_dir(RepoDir) ->
 run_command(Command) ->
   lager:info("~s", [Command]),
   Result = os:cmd(Command),
-  HR = [$~ || _ <- lists:seq(1, 80)],
+  HR = lists:duplicate(80, $~),
   lager:debug("~n~s~n$ ~s~n~s~n~s", [HR, Command, Result, HR]),
   Result.
 

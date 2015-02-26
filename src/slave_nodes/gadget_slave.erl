@@ -65,18 +65,18 @@ handle_info({nodedown, SlaveNode, Info}, State = #{slave_node := SlaveNode}) ->
 handle_info({Port, {data, {eol, SlaveLog}}},
             State = #{slave_port := Port, wait_for_eol := false}) ->
   #{slave_node := SlaveNode} = State,
-  HR = [$~ || _ <- lists:seq(1, 80)],
+  HR = lists:duplicate(80, $~),
   lager:debug("~n~s~n(~p)> ~s~n~s~n~s", [HR, SlaveNode, SlaveLog, HR]),
   {noreply, State};
 handle_info({Port, {data, {eol, SlaveLog}}},
             State = #{slave_port := Port, wait_for_eol := true}) ->
   #{slave_node := SlaveNode} = State,
-  HR = [$~ || _ <- lists:seq(1, 80)],
+  HR = lists:duplicate(80, $~),
   lager:debug("~n(~p)> ~s~n~s~n~s", [SlaveNode, SlaveLog, HR]),
   {noreply, State};
 handle_info({Port, {data, {noeol, SlaveLog}}}, State = #{slave_port := Port}) ->
   #{slave_node := SlaveNode} = State,
-  HR = [$~ || _ <- lists:seq(1, 80)],
+  HR = lists:duplicate(80, $~),
   lager:debug("~n~s~n(~p)> ~s~n~s", [HR, SlaveNode, SlaveLog]),
   {noreply, State};
 handle_info(_Info, State) ->
