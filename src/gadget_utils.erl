@@ -154,6 +154,14 @@ messages_from_comment(Comment, GithubFiles) ->
       messages_from_comment(File, Line, Text, MatchingFile)
   end.
 
+messages_from_comment(Filename, 0, Text, File) ->
+  #{<<"raw_url">> := RawUrl} = File,
+  [ #{commit_id => commit_id_from_raw_url(RawUrl, Filename),
+      path      => Filename,
+      position  => 0,
+      text      => Text
+      }
+  ];
 messages_from_comment(Filename, Line, Text, File) ->
   #{ <<"patch">>      := Patch
    , <<"raw_url">>    := RawUrl
