@@ -111,7 +111,14 @@ compile_project(RepoDir) ->
             throw(cant_compile)
         end
     end,
-  re:split(Output, "\n", [{return, binary}, trim]).
+  DecodedOutput = unicode:characters_to_binary(Output),
+  try
+    re:split(DecodedOutput, "\n", [{return, binary}, trim])
+  catch
+    _:Error ->
+      lager:warning("Uncomprehensible output: ~p", [DecodedOutput]),
+      Error
+  end.
 
 make_project(RepoDir) ->
   gadget_utils:run_command("cd " ++ RepoDir ++ "; V=1000 make").

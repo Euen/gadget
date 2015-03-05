@@ -13,6 +13,8 @@
     , elvis
     , erlydtl
     , egithub
+    , tools
+    , xref_runner
     ]},
    {mod, {gadget, []}},
    {modules,
