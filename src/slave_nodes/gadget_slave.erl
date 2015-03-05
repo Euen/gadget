@@ -45,10 +45,12 @@ init(NodeName) ->
         [ "-name" , SlaveNode
         , "-setcookie", erlang:get_cookie()
         , "-noshell"
+        , "-boot", "start_clean"
         , "-eval", Ping
         ]}
       ]),
-  wait_for_node(#{slave_port => Port, slave_node => NodeName}).
+  wait_for_node(
+    #{slave_port => Port, slave_node => NodeName, wait_for_eol => false}).
 
 %% @private
 -spec handle_call(Msg, _From, state()) ->
@@ -66,20 +68,23 @@ handle_info({Port, {data, {eol, SlaveLog}}},
             State = #{slave_port := Port, wait_for_eol := false}) ->
   #{slave_node := SlaveNode} = State,
   HR = lists:duplicate(80, $~),
-  lager:debug("~n~s~n(~p)> ~s~n~s~n~s", [HR, SlaveNode, SlaveLog, HR]),
+  lager:debug("~n~s~n(~p)> ~s~n~s", [HR, SlaveNode, SlaveLog, HR]),
   {noreply, State};
 handle_info({Port, {data, {eol, SlaveLog}}},
             State = #{slave_port := Port, wait_for_eol := true}) ->
   #{slave_node := SlaveNode} = State,
   HR = lists:duplicate(80, $~),
-  lager:debug("~n(~p)> ~s~n~s~n~s", [SlaveNode, SlaveLog, HR]),
+  lager:debug("~n(~p)> ~s~n~s", [SlaveNode, SlaveLog, HR]),
   {noreply, State};
 handle_info({Port, {data, {noeol, SlaveLog}}}, State = #{slave_port := Port}) ->
   #{slave_node := SlaveNode} = State,
   HR = lists:duplicate(80, $~),
-  lager:debug("~n~s~n(~p)> ~s~n~s", [HR, SlaveNode, SlaveLog]),
+  lager:debug("~n~s~n(~p)> ~s", [HR, SlaveNode, SlaveLog]),
   {noreply, State};
-handle_info(_Info, State) ->
+handle_info(Info, State) ->
+  #{slave_node := SlaveNode} = State,
+  HR = lists:duplicate(80, $~),
+  lager:warning("~n~s~n(~p)> ~p", [HR, SlaveNode, Info]),
   {noreply, State}.
 
 %% @private
