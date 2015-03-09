@@ -75,7 +75,7 @@ clone_repo(RepoDir, Branch, GitUrl) ->
   ok.
 
 -spec ensure_dir_deleted(file:name_all()) -> string().
-ensure_dir_deleted(RepoDir) -> run_command("rm -r " ++ RepoDir).
+ensure_dir_deleted(RepoDir) -> run_command(["rm -r ", RepoDir]).
 
 ensure_dir(RepoDir) ->
   case filelib:ensure_dir(RepoDir) of
@@ -120,8 +120,7 @@ compile_project(RepoDir) ->
       Error
   end.
 
-make_project(RepoDir) ->
-  gadget_utils:run_command("cd " ++ RepoDir ++ "; V=1000 make").
+make_project(RepoDir) -> run_command(["cd ", RepoDir, "; V=1000 make"]).
 
 rebarize_project(RepoDir) ->
   Rebar =
@@ -129,10 +128,8 @@ rebarize_project(RepoDir) ->
       false -> filename:absname("deps/rebar/rebar");
       Exec -> Exec
     end,
-  gadget_utils:run_command(
-    "cd " ++ RepoDir ++ "; " ++ Rebar ++ " --verbose get-deps compile"),
-  gadget_utils:run_command(
-    "cd " ++ RepoDir ++ "; " ++ Rebar ++ " skip_deps=true clean compile").
+  run_command(["cd ", RepoDir, "; ", Rebar, " --verbose get-deps compile"]),
+  run_command(["cd ", RepoDir, "; ", Rebar, " skip_deps=true clean compile"]).
 
 -spec messages_from_comments([comment()], [egithub_webhook:file()]) ->
   [egithub_webhook:message()].

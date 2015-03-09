@@ -91,13 +91,14 @@ generate_comment(RepoDir, XrefWarning) ->
   Target = maps:get(target, XrefWarning, undefined),
   #{ file   => re:replace(Filename, [$^ | RepoDir], "", [{return, binary}])
    , number => Line
-   , text   => iolist_to_binary(generate_comment_text(Check, Source, Target))
+   , text   => generate_comment_text(Check, Source, Target)
    }.
 
 generate_comment_text(Check, Source, Target) ->
-  [ "According to **Xref**:\n> "
-  , do_generate_comment_text(Check, Source, Target)
-  ].
+  iolist_to_binary(
+    [ "According to **Xref**:\n> "
+    , do_generate_comment_text(Check, Source, Target)
+    ]).
 
 do_generate_comment_text(Check, {SM, SF, SA}, TMFA) ->
   SMFA = io_lib:format("`~p:~p/~p`", [SM, SF, SA]),

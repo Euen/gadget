@@ -33,9 +33,14 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
 process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
-    gadget_utils:compile_project(RepoDir),
-    Comments = dialyze_project(RepoDir),
-    {ok, gadget_utils:messages_from_comments(Comments, GithubFiles)}
+    case filelib:is_regular(filename:join(RepoDir, "erlang.mk")) of
+      false -> {error, "Only erlang.mk based repos can be dialyzed"};
+      true ->
+        gadget_utils:compile_project(RepoDir),
+        build_plt(RepoDir),
+        Comments = dialyze_project(RepoDir),
+        {ok, gadget_utils:messages_from_comments(Comments, GithubFiles)}
+    end
   catch
     _:Error ->
       lager:warning(
@@ -49,4 +54,36 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
     gadget_utils:ensure_dir_deleted(RepoDir)
   end.
 
-dialyze_project(RepoDir) -> [].
+build_plt(RepoDir) ->
+  gadget_utils:run_command(["cd ", RepoDir, "; V=1000 make plt"]).
+
+dialyze_project(RepoDir) ->
+  GadgetMk =
+    filename:absname(filename:join(priv_dir(), "gadget.mk")),
+  Command = ["cd ", RepoDir, "; V=1000 make -f ", GadgetMk, " gadget-dialyze"],
+  Output = gadget_utils:run_command(Command),
+  ResultFile = filename:join(RepoDir, "gadget-dialyze.result"),
+  case filelib:is_regular(ResultFile) of
+    false -> throw({error, Output});
+    true ->
+      {ok, Results} = file:consult(ResultFile),
+      [generate_comment(RepoDir, Result) || Result <- Results]
+  end.
+
+generate_comment(RepoDir, Warning = {_, {Filename, Line}, _}) ->
+  #{ file   => re:replace(Filename, [$^ | RepoDir], "", [{return, binary}])
+   , number => Line
+   , text   => generate_comment_text(Warning)
+   }.
+
+generate_comment_text(Warning) ->
+  FromDialyzer = dialyzer:format_warning(Warning),
+  [_File, _Line | MessageParts] = string:tokens(FromDialyzer, [$:]),
+  Message = string:join(MessageParts, ":"),
+  iolist_to_binary(["According to **Dialyzer**:\n> ", Message]).
+
+priv_dir() ->
+  case code:priv_dir(gadget) of
+    {error, bad_name} -> "priv";
+    Dir -> Dir
+  end.
