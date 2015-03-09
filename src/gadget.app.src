@@ -15,6 +15,7 @@
     , egithub
     , tools
     , xref_runner
+    , dialyzer
     ]},
    {mod, {gadget, []}},
    {modules,
