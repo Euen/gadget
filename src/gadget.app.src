@@ -4,7 +4,8 @@
    {description, "The ultimate code checking machine"},
    {vsn, "0.1.1"},
    {applications,
-    [ kernel
+    [ erts
+    , kernel
     , stdlib
     , erl_interface
     , cowboy
@@ -14,6 +15,7 @@
     , erlydtl
     , egithub
     , tools
+    , parsetools
     , xref_runner
     , dialyzer
     ]},
