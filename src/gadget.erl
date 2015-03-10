@@ -36,6 +36,8 @@ webhook(<<"compiler">>, RequestMap) ->
   do_webhook(gadget_compiler_webhook, RequestMap);
 webhook(<<"xref">>, RequestMap) ->
   do_webhook(gadget_xref_webhook, RequestMap);
+webhook(<<"dialyzer">>, RequestMap) ->
+  do_webhook(gadget_dialyzer_webhook, RequestMap);
 webhook(<<"elvis">>, RequestMap) ->
   do_webhook(elvis_webhook, RequestMap).
 

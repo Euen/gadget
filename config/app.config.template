@@ -10,7 +10,8 @@
     {webhooks,
       #{elvis     => "http://gadget.inakalabs.com/webhooks/elvis",
         compiler  => "http://gadget.inakalabs.com/webhooks/compiler",
-        xref      => "http://gadget.inakalabs.com/webhook/xref"
+        xref      => "http://gadget.inakalabs.com/webhook/xref",
+        dialyzer  => "http://gadget.inakalabs.com/webhook/dialyzer"
        }
     },
     %% Basic Auth
