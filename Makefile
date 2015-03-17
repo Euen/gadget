@@ -6,15 +6,15 @@ DEPS = sync elvis cowboy lager erlydtl merl egithub shotgun eper rebar xref_runn
 
 dep_sync = git git://github.com/inaka/sync.git 0.1.3
 dep_eper = git git://github.com/massemanet/eper.git 0.90.0
-dep_egithub = git git://github.com/inaka/erlang-github 0.1.8
+dep_egithub = git git://github.com/inaka/erlang-github.git 0.1.9
 dep_elvis = git git://github.com/inaka/elvis.git 0.2.5-alpha
-dep_cowboy = git git://github.com/extend/cowboy.git 1.0.0
-dep_lager = git git://github.com/basho/lager.git 2.1.0
-dep_erlydtl = git git://github.com/erlydtl/erlydtl 0.10.0
-dep_merl = git git://github.com/richcarl/merl master
-dep_shotgun = git git://github.com/inaka/shotgun 0.1.6
-dep_rebar = git git://github.com/basho/rebar 2.0.0
-dep_xref_runner = git git://github.com/inaka/xref_runner 0.1.1
+dep_cowboy = git git://github.com/extend/cowboy.git 1.0.1
+dep_lager = git git://github.com/basho/lager.git 2.1.1
+dep_erlydtl = git git://github.com/erlydtl/erlydtl.git 0.10.0
+dep_merl = git git://github.com/richcarl/merl.git master
+dep_shotgun = git git://github.com/inaka/shotgun.git 0.1.6
+dep_rebar = git git://github.com/basho/rebar.git 2.0.0
+dep_xref_runner = git git://github.com/inaka/xref_runner.git 0.2.0
 
 DIALYZER_DIRS := ebin/
 DIALYZER_OPTS := --verbose --statistics -Werror_handling \
