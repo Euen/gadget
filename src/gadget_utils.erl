@@ -10,7 +10,8 @@
         , run_command/1
         , unique_id/0
         , compile_project/1
-        , messages_from_comments/2
+        , messages_from_comments/3
+        , format_message/2
         ]).
 
 -type comment() :: #{file   => string(),
@@ -131,15 +132,15 @@ rebarize_project(RepoDir) ->
   run_command(["cd ", RepoDir, "; ", Rebar, " --verbose get-deps compile"]),
   run_command(["cd ", RepoDir, "; ", Rebar, " skip_deps=true clean compile"]).
 
--spec messages_from_comments([comment()], [egithub_webhook:file()]) ->
+-spec messages_from_comments(string(), [comment()], [egithub_webhook:file()]) ->
   [egithub_webhook:message()].
-messages_from_comments(Comments, GithubFiles) ->
+messages_from_comments(ToolName, Comments, GithubFiles) ->
   lists:flatmap(
     fun(Comment) ->
-      messages_from_comment(Comment, GithubFiles)
+      messages_from_comment(ToolName, Comment, GithubFiles)
     end, Comments).
 
-messages_from_comment(Comment, GithubFiles) ->
+messages_from_comment(ToolName, Comment, GithubFiles) ->
   #{ file   := File
    , number := Line
    , text   := Text
@@ -155,7 +156,8 @@ messages_from_comment(Comment, GithubFiles) ->
   case MatchingFiles of
     [] -> [];
     [MatchingFile|_] ->
-      messages_from_comment(File, Line, Text, MatchingFile)
+      FullText = format_message(ToolName, Text),
+      messages_from_comment(File, Line, FullText, MatchingFile)
   end.
 
 messages_from_comment(Filename, 0, Text, File) ->
@@ -188,3 +190,7 @@ commit_id_from_raw_url(Url, Filename) ->
   Regex = <<".+/raw/(.+)/", Filename/binary>>,
   {match, [CommitId]} = re:run(Url, Regex, [{capture, all_but_first, binary}]),
   binary_to_list(CommitId).
+
+-spec format_message(string(), iodata()) -> binary().
+format_message(ToolName, Text) ->
+  iolist_to_binary(["According to **", ToolName, "**:\n> ", Text]).

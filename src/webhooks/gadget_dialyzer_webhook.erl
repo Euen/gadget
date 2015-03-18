@@ -37,7 +37,10 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
         gadget_utils:compile_project(RepoDir),
         build_plt(RepoDir),
         Comments = dialyze_project(RepoDir),
-        {ok, gadget_utils:messages_from_comments(Comments, GithubFiles)}
+        Messages =
+          gadget_utils:messages_from_comments(
+            "Dialyzer", Comments, GithubFiles),
+        {ok, Messages}
     end
   catch
     _:Error ->
@@ -77,8 +80,7 @@ generate_comment(RepoDir, Warning = {_, {Filename, Line}, _}) ->
 generate_comment_text(Warning) ->
   FromDialyzer = dialyzer:format_warning(Warning),
   [_File, _Line | MessageParts] = string:tokens(FromDialyzer, [$:]),
-  Message = string:join(MessageParts, ":"),
-  iolist_to_binary(["According to **Dialyzer**:\n> ", Message]).
+  string:join(MessageParts, ":").
 
 priv_dir() ->
   case code:priv_dir(gadget) of

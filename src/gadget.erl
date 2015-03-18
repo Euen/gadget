@@ -39,7 +39,7 @@ webhook(<<"xref">>, RequestMap) ->
 webhook(<<"dialyzer">>, RequestMap) ->
   do_webhook(gadget_dialyzer_webhook, RequestMap);
 webhook(<<"elvis">>, RequestMap) ->
-  do_webhook(elvis_webhook, RequestMap).
+  do_webhook(gadget_elvis_webhook, RequestMap).
 
 do_webhook(Mod, RequestMap) ->
   egithub_webhook:event(Mod, github_credentials(), RequestMap).
