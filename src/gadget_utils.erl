@@ -157,7 +157,6 @@ messages_from_comment(ToolName, Comment, GithubFiles) ->
     [] -> [];
     [MatchingFile|_] ->
       FullText = format_message(ToolName, Text),
-        iolist_to_binary(["According to **", ToolName, "**:\n> ", Text]),
       messages_from_comment(File, Line, FullText, MatchingFile)
   end.
 
