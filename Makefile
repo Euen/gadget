@@ -14,7 +14,7 @@ dep_erlydtl = git git://github.com/erlydtl/erlydtl.git 0.10.0
 dep_merl = git git://github.com/richcarl/merl.git master
 dep_shotgun = git git://github.com/inaka/shotgun.git 0.1.6
 dep_rebar = git git://github.com/basho/rebar.git 2.0.0
-dep_xref_runner = git git://github.com/inaka/xref_runner.git 0.2.0
+dep_xref_runner = git git://github.com/inaka/xref_runner.git 0.2.1
 
 DIALYZER_DIRS := ebin/
 DIALYZER_OPTS := --verbose --statistics -Werror_handling \
