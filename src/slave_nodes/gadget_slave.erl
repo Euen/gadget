@@ -32,7 +32,7 @@ stop(PidOrNodeName) -> gen_server:cast(PidOrNodeName, stop).
 %% @private
 -spec init(atom()) -> {ok, state()} | {stop, term()}.
 init(NodeName) ->
-  Erl = os:find_executable("erl"),
+  Erl = application:get_env(gadget, erl_path, os:find_executable("erl")),
   SlaveNode = atom_to_list(NodeName),
   ok = net_kernel:monitor_nodes(true, [nodedown_reason]),
   Ping = iolist_to_binary(io_lib:format("net_adm:ping(~p)", [node()])),

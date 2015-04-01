@@ -2,8 +2,10 @@
  {
    gadget,
    [
+    %% Erl
+    {erl_path, "/usr/local/bin/erl"},
     %% OAuth
-    {github_scope, "public_repo,read:org"},
+    {github_scope, "public_repo,repo:status,read:org"},
     {github_client_id, "bcn98345nv2098682c69"},
     {github_client_secret, "98vb98nbsbfgdjdlh87s986s08724958nfgdv"},
     %% Webhooks
