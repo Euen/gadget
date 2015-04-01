@@ -18,6 +18,7 @@
     , parsetools
     , xref_runner
     , dialyzer
+    , katana
     ]},
    {mod, {gadget, []}},
    {modules,

@@ -2,7 +2,7 @@ PROJECT = gadget
 
 CONFIG ?= config/app.config
 
-DEPS = sync elvis cowboy lager erlydtl merl egithub shotgun eper rebar xref_runner
+DEPS = sync elvis cowboy lager erlydtl merl egithub shotgun eper rebar xref_runner katana
 
 dep_sync = git git://github.com/inaka/sync.git 0.1.3
 dep_eper = git git://github.com/massemanet/eper.git 0.90.0
@@ -15,6 +15,7 @@ dep_merl = git git://github.com/richcarl/merl.git master
 dep_shotgun = git git://github.com/inaka/shotgun.git 0.1.6
 dep_rebar = git git://github.com/basho/rebar.git 2.0.0
 dep_xref_runner = git git://github.com/inaka/xref_runner.git 0.2.1
+dep_katana =  git https://github.com/inaka/erlang-katana 0.2.0
 
 DIALYZER_DIRS := ebin/
 DIALYZER_OPTS := --verbose --statistics -Werror_handling \
