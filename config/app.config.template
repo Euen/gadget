@@ -1,5 +1,29 @@
 [
  {
+   sumo_db,
+   [
+    {wpool_opts, [{overrun_warning, 100}]},
+    {log_queries, true},
+    {query_timeout, 30000},
+    {storage_backends, []},
+    {stores,
+     [{gadget_store_mnesia,
+       sumo_store_mnesia,
+       [{workers, 10},
+        {disc_copies, here}
+       ]
+      }
+     ]
+    },
+    {docs,
+     [
+      {gadget_repos, gadget_store_mnesia}
+     ]
+    },
+    {events, []}
+   ]
+ },
+ {
    gadget,
    [
     %% Erl

@@ -4,6 +4,7 @@
 -export([ start/0
         , start/2
         , stop/1
+        , start_phase/3
         , webhook/2
         ]).
 
@@ -14,9 +15,42 @@
 -spec start(application:start_type(), term()) ->
   {ok, pid()} | {ok, pid(), term()} | {error, term()}.
 start(_StartType, _StartArgs) ->
-  {ok, Pid} = gadget_sup:start_link(),
-  start_cowboy_listeners(),
-  {ok, Pid}.
+  gadget_sup:start_link().
+
+-spec start_phase(atom(), application:start_type(), []) -> ok | {error, _}.
+start_phase(create_schema, _StartType, []) ->
+  application:stop(mnesia),
+  mnesia:create_schema([node()]),
+  {ok, _} = application:ensure_all_started(mnesia),
+  sumo:create_schema();
+start_phase(start_cowboy_listeners, _StartType, []) ->
+  Port = application:get_env(cowboy, http_port, 8585),
+  ListenerCount = application:get_env(cowboy, http_listener_count, 10),
+  Dispatch = cowboy_router:compile([
+    {'_', [ %% Web UI
+            {"/", gadget_plain_dtl_handler, [index_dtl]}
+          , {"/repos", gadget_repos_handler, []}
+          , {"/active-tools", gadget_on_handler, []}
+          , {"/active-tools/:tool", gadget_off_handler, []}
+          , {"/assets/[...]", cowboy_static, {dir, "assets"}}
+            %% OAuth
+          , {"/login", gadget_login_handler, []}
+          , {"/callback", gadget_callback_handler, []}
+            %% Webhook
+          , {"/webhook/:tool", gadget_webhook_handler, []}
+          ]
+    }
+  ]),
+  RanchOpts = [{port, Port}],
+  CowboyOpts =
+    [ {env,       [{dispatch, Dispatch}]}
+    , {compress,  true}
+    , {timeout,   12000}
+    ],
+  case cowboy:start_http(http_gadget, ListenerCount, RanchOpts, CowboyOpts) of
+    {ok, _} -> ok;
+    {error, {already_started, _}} -> ok
+  end.
 
 -spec stop(term()) -> ok.
 stop(_State) ->
@@ -47,33 +81,6 @@ do_webhook(Mod, RequestMap) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Not exported functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-start_cowboy_listeners() ->
-  {ok, Port} = application:get_env(cowboy, http_port),
-  {ok, ListenerCount} = application:get_env(cowboy, http_listener_count),
-  Dispatch = cowboy_router:compile([
-    {'_', [ %% Web UI
-            {"/", gadget_plain_dtl_handler, [index_dtl]}
-          , {"/repos", gadget_repos_handler, []}
-          , {"/active-tools", gadget_on_handler, []}
-          , {"/active-tools/:tool", gadget_off_handler, []}
-          , {"/assets/[...]", cowboy_static, {dir, "assets"}}
-            %% OAuth
-          , {"/login", gadget_login_handler, []}
-          , {"/callback", gadget_callback_handler, []}
-            %% Webhook
-          , {"/webhook/:tool", gadget_webhook_handler, []}
-          ]
-    }
-  ]),
-  RanchOpts = [{port, Port}],
-  CowboyOpts =
-    [ {env,       [{dispatch, Dispatch}]}
-    , {compress,  true}
-    , {timeout,   12000}
-    ],
-  cowboy:start_http(http_gadget, ListenerCount, RanchOpts, CowboyOpts).
-
 -spec github_credentials() -> egithub:credentials().
 github_credentials() ->
     User = application:get_env(gadget, github_user, ""),

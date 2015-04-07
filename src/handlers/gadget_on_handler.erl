@@ -49,6 +49,7 @@ handle_post(Req, State) ->
       Cred = egithub:oauth(Token),
       {ok, _Hook} =
         egithub:create_webhook(Cred, Repo, WebhookUrl, ["pull_request"]),
+      gadget_repos_repo:register(Repo, Token),
       {true, Req1, State}
   end.
 

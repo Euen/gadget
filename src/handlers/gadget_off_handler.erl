@@ -50,6 +50,7 @@ delete_resource(Req, State) ->
       [] -> ok;
       [Id] -> egithub:delete_webhook(Cred, Repo, Id)
     end,
+  gadget_repos_repo:unregister(Repo),
   {true, Req, State}.
 
 -spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
