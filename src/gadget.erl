@@ -6,6 +6,8 @@
         , stop/1
         , start_phase/3
         , webhook/2
+        , register/3
+        , unregister/2
         ]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,7 +67,7 @@ stop(_State) ->
 start() ->
   application:ensure_all_started(gadget).
 
--spec webhook(atom(), map()) -> ok | {error, term()}.
+-spec webhook(binary(), map()) -> ok | {error, term()}.
 webhook(<<"compiler">>, RequestMap) ->
   do_webhook(gadget_compiler_webhook, RequestMap);
 webhook(<<"xref">>, RequestMap) ->
@@ -77,6 +79,12 @@ webhook(<<"elvis">>, RequestMap) ->
 
 do_webhook(Mod, RequestMap) ->
   egithub_webhook:event(Mod, github_credentials(), RequestMap).
+
+-spec register(string(), atom(), string()) -> gadget_repos:repo().
+register(Repo, Tool, Token) -> gadget_repos_repo:register(Repo, Tool, Token).
+
+-spec unregister(string(), atom()) -> 0|1.
+unregister(Repo, Tool) -> gadget_repos_repo:unregister(Repo, Tool).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Not exported functions

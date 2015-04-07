@@ -37,10 +37,10 @@ content_types_accepted(Req, State) ->
 handle_post(Req, State) ->
   {ok, Body, Req1} = cowboy_req:body(Req),
   Decoded = jiffy:decode(Body, [return_maps]),
-  ToolName = maps:get(<<"tool">>, Decoded),
+  Tool = binary_to_atom(maps:get(<<"tool">>, Decoded), utf8),
 
   {ok, WebhookMap} = application:get_env(gadget, webhooks),
-  case maps:get(binary_to_atom(ToolName, utf8), WebhookMap, false) of
+  case maps:get(Tool, WebhookMap, false) of
     false ->
       {false, Req1, State};
     WebhookUrl ->
@@ -49,7 +49,7 @@ handle_post(Req, State) ->
       Cred = egithub:oauth(Token),
       {ok, _Hook} =
         egithub:create_webhook(Cred, Repo, WebhookUrl, ["pull_request"]),
-      gadget_repos_repo:register(Repo, Token),
+      gadget:register(Repo, Tool, Token),
       {true, Req1, State}
   end.
 
