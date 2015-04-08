@@ -2,15 +2,7 @@
 
 -behaviour(egithub_webhook).
 
--export([event/2]).
 -export([handle_pull_request/3]).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% External Functions
-
--spec event(egithub:credentials(), egithub_webhook:request()) ->
-  ok | {error, term()}.
-event(Cred, Request) -> egithub_webhook:event(?MODULE, Cred, Request).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Callbacks
