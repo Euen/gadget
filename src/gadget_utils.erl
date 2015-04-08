@@ -1,6 +1,6 @@
 -module(gadget_utils).
 
--export([ enabled_tools/2
+-export([ active_tools/1
         , tool_info/3
         , is_public/1
         , is_admin/1
@@ -20,8 +20,9 @@
                     }.
 -export_type([comment/0]).
 
--spec enabled_tools(map(), [map()]) -> [atom()].
-enabled_tools(Tools, Hooks) ->
+-spec active_tools([map()]) -> [atom()].
+active_tools(Hooks) ->
+  Tools = application:get_env(gadget, webhooks, #{}),
   [tool_info(ToolName, Tools, Hooks) || ToolName <- maps:keys(Tools)].
 
 -spec tool_info(atom(), map(), [map()]) -> atom().

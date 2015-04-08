@@ -96,9 +96,7 @@ repo_info(Cred, Repo) ->
       {error, _} -> []
     end,
 
-  WebhookMap = application:get_env(gadget, webhooks, #{}),
-
-  Status = gadget_utils:enabled_tools(WebhookMap, Hooks),
+  Status = gadget_utils:active_tools(Hooks),
   StatusList = lists:map(fun maps:to_list/1, Status),
   [ {full_name, FullName}
   , {name, Name}

@@ -33,10 +33,9 @@ delete_resource(Req, State) ->
   {Repo, _} = cowboy_req:qs_val(<<"repo">>, Req, ""),
   Cred = egithub:oauth(Token),
 
-  {ok, WebhookMap} = application:get_env(gadget, webhooks),
   Tool = binary_to_atom(ToolNameBin, utf8),
   {ok, Hooks} = egithub:hooks(Cred, Repo),
-  EnabledTools = gadget_utils:enabled_tools(WebhookMap, Hooks),
+  EnabledTools = gadget_utils:active_tools(Hooks),
   HIds =
     [HookId
      || #{ hook_id := HookId
