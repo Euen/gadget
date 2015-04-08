@@ -6,7 +6,8 @@
         , stop/1
         , start_phase/3
         , webhook/2
-        , register/3
+        ]).
+-export([ register/3
         , unregister/2
         ]).
 
@@ -68,17 +69,24 @@ start() ->
   application:ensure_all_started(gadget).
 
 -spec webhook(binary(), map()) -> ok | {error, term()}.
-webhook(<<"compiler">>, RequestMap) ->
-  do_webhook(gadget_compiler_webhook, RequestMap);
-webhook(<<"xref">>, RequestMap) ->
-  do_webhook(gadget_xref_webhook, RequestMap);
-webhook(<<"dialyzer">>, RequestMap) ->
-  do_webhook(gadget_dialyzer_webhook, RequestMap);
-webhook(<<"elvis">>, RequestMap) ->
-  do_webhook(gadget_elvis_webhook, RequestMap).
+webhook(ToolName, RequestMap) ->
+  #{ mod := Mod
+   , tool := Tool
+   , name := Name
+   , context := Context
+   } = gadget_utils:webhook_info(ToolName),
 
-do_webhook(Mod, RequestMap) ->
-  egithub_webhook:event(Mod, github_credentials(), RequestMap).
+  Repo = get_repo_name(RequestMap),
+  Cred = github_credentials(),
+
+  case gadget_repos_repo:fetch(Repo, Tool) of
+    notfound ->
+      egithub_webhook:event(Mod, Cred, RequestMap);
+    GadgetRepo ->
+      Token = gadget_repos:token(GadgetRepo),
+      StatusCred = egithub:oauth(Token),
+      egithub_webhook:event(Mod, StatusCred, Name, Context, Cred, RequestMap)
+  end.
 
 -spec register(string(), atom(), string()) -> gadget_repos:repo().
 register(Repo, Tool, Token) -> gadget_repos_repo:register(Repo, Tool, Token).
@@ -91,6 +99,12 @@ unregister(Repo, Tool) -> gadget_repos_repo:unregister(Repo, Tool).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec github_credentials() -> egithub:credentials().
 github_credentials() ->
-    User = application:get_env(gadget, github_user, ""),
-    Password = application:get_env(gadget, github_password, ""),
-    egithub:basic_auth(User, Password).
+  User = application:get_env(gadget, github_user, ""),
+  Password = application:get_env(gadget, github_password, ""),
+  egithub:basic_auth(User, Password).
+
+-spec get_repo_name(map()) -> string().
+get_repo_name(#{body := Body}) ->
+  EventData = jiffy:decode(Body, [return_maps]),
+  #{<<"repository">> := Repository} = EventData,
+  maps:get(<<"full_name">>, Repository, <<>>).

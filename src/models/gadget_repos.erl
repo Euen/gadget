@@ -13,6 +13,7 @@
 -export_type([repo/0]).
 
 -export([new/3]).
+-export([token/1]).
 -export([sumo_schema/0, sumo_wakeup/1, sumo_sleep/1]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,3 +49,6 @@ new(Name, Tool, Token) ->
    , token => Token
    , created_at => ktn_date:now_human_readable()
    }.
+
+-spec token(repo()) -> string().
+token(#{token := Token}) -> Token.
