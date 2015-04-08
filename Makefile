@@ -6,7 +6,7 @@ DEPS = sync elvis cowboy lager erlydtl merl egithub shotgun eper rebar xref_runn
 
 dep_sync = git git://github.com/inaka/sync.git 0.1.3
 dep_eper = git git://github.com/massemanet/eper.git 0.90.0
-dep_egithub = git git://github.com/inaka/erlang-github.git 0.1.10
+dep_egithub = git git://github.com/inaka/erlang-github.git 0.1.12
 dep_elvis = git git://github.com/inaka/elvis.git 0.2.5-alpha
 dep_cowboy = git git://github.com/extend/cowboy.git 1.0.1
 dep_lager = git git://github.com/basho/lager.git 2.1.1
