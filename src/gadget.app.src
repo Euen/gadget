@@ -2,7 +2,7 @@
   application, gadget,
   [
    {description, "The ultimate code checking machine"},
-   {vsn, "0.1.2"},
+   {vsn, "0.2.0"},
    {applications,
     [ erts
     , kernel
@@ -21,12 +21,17 @@
     , katana
     , mnesia
     , sumo_db
+    , epocxy
     ]},
    {mod, {gadget, []}},
    {modules,
     []
    },
    {registered, []},
-   {start_phases, [{create_schema, []}, {start_cowboy_listeners, []}]}
+   {start_phases,
+    [ {cxy_ctl_setup, []}
+    , {create_schema, []}
+    , {start_cowboy_listeners, []}
+    ]}
   ]
 }.
