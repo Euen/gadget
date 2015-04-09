@@ -1,3 +1,4 @@
+db/
 .eunit
 deps
 *.o

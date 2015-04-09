@@ -2,7 +2,7 @@
   application, gadget,
   [
    {description, "The ultimate code checking machine"},
-   {vsn, "0.1.1"},
+   {vsn, "0.1.2"},
    {applications,
     [ erts
     , kernel
@@ -19,11 +19,14 @@
     , xref_runner
     , dialyzer
     , katana
+    , mnesia
+    , sumo_db
     ]},
    {mod, {gadget, []}},
    {modules,
     []
    },
-   {registered, []}
+   {registered, []},
+   {start_phases, [{create_schema, []}, {start_cowboy_listeners, []}]}
   ]
 }.

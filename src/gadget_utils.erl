@@ -1,6 +1,6 @@
 -module(gadget_utils).
 
--export([ enabled_tools/2
+-export([ active_tools/1
         , tool_info/3
         , is_public/1
         , is_admin/1
@@ -12,6 +12,7 @@
         , compile_project/1
         , messages_from_comments/3
         , format_message/2
+        , webhook_info/1
         ]).
 
 -type comment() :: #{file   => string(),
@@ -20,8 +21,9 @@
                     }.
 -export_type([comment/0]).
 
--spec enabled_tools(map(), [map()]) -> [atom()].
-enabled_tools(Tools, Hooks) ->
+-spec active_tools([map()]) -> [atom()].
+active_tools(Hooks) ->
+  Tools = application:get_env(gadget, webhooks, #{}),
   [tool_info(ToolName, Tools, Hooks) || ToolName <- maps:keys(Tools)].
 
 -spec tool_info(atom(), map(), [map()]) -> atom().
@@ -49,7 +51,8 @@ tool_info(ToolName, Tools, Hooks) ->
 
   #{ name => ToolName
    , status => Status
-   , hook_id => HookId}.
+   , hook_id => HookId
+   }.
 
 -spec is_public(map()) -> boolean().
 is_public(#{<<"private">> := Private}) -> not Private.
@@ -194,3 +197,21 @@ commit_id_from_raw_url(Url, Filename) ->
 -spec format_message(string(), iodata()) -> binary().
 format_message(ToolName, Text) ->
   iolist_to_binary(["According to **", ToolName, "**:\n> ", Text]).
+
+-type webhook_info() :: #{ tool => atom()
+                         , mod => atom()
+                         , name => string()
+                         , context => string()
+                         }.
+-spec webhook_info(binary()) -> webhook_info().
+webhook_info(Tool) ->
+  #{ tool => binary_to_atom(Tool, utf8)
+   , mod => binary_to_atom(<<"gadget_", Tool/binary, "_webhook">>, utf8)
+   , name => capitalize(Tool)
+   , context => binary_to_list(<<"gadget/", Tool/binary>>)
+   }.
+
+capitalize(<<>>) -> <<>>;
+capitalize(<<C, Rest/binary>>) ->
+  [Upper] = string:to_upper([C]),
+  [Upper | binary_to_list(Rest)].
