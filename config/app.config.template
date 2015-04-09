@@ -1,4 +1,10 @@
 [
+ { mnesia,
+   [
+    {dir, "db"},
+    {debug, true}
+   ]
+ },
  {
    sumo_db,
    [
