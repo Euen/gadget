@@ -21,6 +21,11 @@ start(_StartType, _StartArgs) ->
   gadget_sup:start_link().
 
 -spec start_phase(atom(), application:start_type(), []) -> ok | {error, _}.
+start_phase(cxy_ctl_setup, _StartType, []) ->
+  case cxy_ctl:init([{webhook, unlimited, 1000, 100000}]) of
+    true -> ok;
+    {error, Error} -> {error, Error}
+  end;
 start_phase(create_schema, _StartType, []) ->
   application:stop(mnesia),
   mnesia:create_schema([node()]),
@@ -85,7 +90,8 @@ webhook(ToolName, RequestMap) ->
     GadgetRepo ->
       Token = gadget_repos:token(GadgetRepo),
       StatusCred = egithub:oauth(Token),
-      egithub_webhook:event(Mod, StatusCred, Name, Context, Cred, RequestMap)
+      Args = [Mod, StatusCred, Name, Context, Cred, RequestMap],
+      cxy_ctl:execute_task(webhook, egithub_webhook, event, Args)
   end.
 
 -spec register(string(), atom(), string()) -> gadget_repos:repo().
