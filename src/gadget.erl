@@ -22,8 +22,10 @@ start(_StartType, _StartArgs) ->
 
 -spec start_phase(atom(), application:start_type(), []) -> ok | {error, _}.
 start_phase(cxy_ctl_setup, _StartType, []) ->
-  true = cxy_ctl:init([{webhook, unlimited, 1000, 100000}]),
-  ok;
+  case cxy_ctl:init([{webhook, unlimited, 1000, 100000}]) of
+    true -> ok;
+    {error, Error} -> {error, Error}
+  end;
 start_phase(create_schema, _StartType, []) ->
   application:stop(mnesia),
   mnesia:create_schema([node()]),
