@@ -67,8 +67,13 @@ dialyze_project(RepoDir) ->
   case filelib:is_regular(ResultFile) of
     false -> throw({error, Output});
     true ->
-      {ok, Results} = file:consult(ResultFile),
-      [generate_comment(RepoDir, Result) || Result <- Results]
+      case file:consult(ResultFile) of
+        {ok, Results} ->
+          [generate_comment(RepoDir, Result) || Result <- Results];
+        {error, _Error} -> % parse error: the text is the error description
+          {ok, FileContents} = file:read_file(ResultFile),
+          [#{file => <<>>, number => 0, text => FileContents}]
+      end
   end.
 
 generate_comment(RepoDir, Warning = {_, {Filename, Line}, _}) ->

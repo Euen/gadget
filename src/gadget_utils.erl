@@ -143,6 +143,11 @@ messages_from_comments(ToolName, Comments, GithubFiles) ->
       messages_from_comment(ToolName, Comment, GithubFiles)
     end, Comments).
 
+messages_from_comment(ToolName, #{file := <<>>} = Comment, GithubFiles) ->
+  #{text := Text} = Comment,
+  [#{<<"filename">> := FileName} = FirstFile|_] = GithubFiles,
+  FullText = format_message(ToolName, Text),
+  messages_from_comment(FileName, 0, FullText, FirstFile);
 messages_from_comment(ToolName, Comment, GithubFiles) ->
   #{ file   := File
    , number := Line
