@@ -46,6 +46,8 @@ start_phase(start_cowboy_listeners, _StartType, []) ->
           , {"/callback", gadget_callback_handler, []}
             %% Webhook
           , {"/webhook/:tool", gadget_webhook_handler, []}
+            %% Status
+          , {"/status", gadget_status_handler, []}
           ]
     }
   ]),
