@@ -1,9 +1,14 @@
 <div id="header">
-     <a href="/">
-       <img src="/assets/img/logo.png"/ border="0">
-     </a>
-     <div class="name">
-          <h1>Gadget</h1>
-          <blockquote>The best inspector for all your Erlang PRs</blockquote>
-     </div>
+  <ul class="menu">
+    <li><a href="/about">About Gadget</a></li>
+    <li><a href="/config">Configuration</a></li>
+    <li><a href="/repos">Your Repos</a></li>
+  </ul>
+  <a href="/">
+    <img src="/assets/img/logo.png"/ border="0">
+  </a>
+  <div class="name">
+        <h1>Gadget</h1>
+        <blockquote>The ultimate code-checking machine</blockquote>
+  </div>
 </div>

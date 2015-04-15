@@ -6,9 +6,9 @@
   </head>
 
   <body>
-    <div id="container">
+    <div id="content">
       {% include "header.dtl" %}
-      <div id="content">
+      <div id="content-body">
         {% block content %}{% endblock %}
       </div>
       {% include "footer.dtl" %}

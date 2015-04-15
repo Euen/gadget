@@ -1,0 +1,72 @@
+{% extends "base.dtl" %}
+
+{% block title %}How to Configure{% endblock %}
+
+{% block content %}
+<p>
+  When <strong>Elvis</strong>'s webhook runs on your pull request it checks if there's an
+  <strong>elvis.config</strong> file in your <strong>master</strong> branch. If there is
+  one then the configuration and the rules defined in that file are used. In case there
+  is no <strong>elvis.config</strong> file then the
+  <a href="https://github.com/inaka/elvis/wiki/Default-Rules-in-Elvis-Webhook">default rules</a> defined
+  in the server are used.
+</p>
+<p>
+  A complete list of rules available can be found <a href="https://github.com/inaka/elvis/wiki/Rules">here</a>.
+  Not all of these are part of the set of rules included in the default configuration file.
+</p>
+
+<h2>elvis.config</h2>
+
+<p>
+  The basic structure of the configuration file is a list of maps where each one has three keys:
+</p>
+<ul>
+  <li>- <strong>dirs</strong>: list of directories where <strong>Elvis</strong> will look for files.</li>
+  <li>- <strong>filter</strong>: glob pattern in order to select only the files to which the rules apply.</li>
+  <li>- <strong>rules</strong>: list of rules that will be applied to each of the files found.</li>
+</ul>
+<p>
+  Some rules have configuration values that can be set to adapt them according to your needs or specific project.
+</p>
+<p>
+  The following is an example of how an <strong>elvis.config</strong> file might look like:
+</p>
+
+<pre>
+[
+ {
+   elvis,
+   [
+    {config,
+     [#{dirs => ["src", "test"],
+        filter => "*.erl",
+        rules => [{elvis_style, line_length, #{limit => 80,
+                                               skip_comments => false}},
+                  %% ...
+                  {elvis_style, state_record_and_type},
+                  {elvis_style, no_spec_with_records}
+                 ]
+       },
+      #{dirs => ["."],
+        filter => "Makefile",
+        rules => [{elvis_project, no_deps_master_erlang_mk, #{ignore => []}},
+                  {elvis_project, git_for_deps_erlang_mk, #{ignore => []}}]
+       },
+      #{dirs => ["."],
+        filter => "rebar.config",
+        rules => [{elvis_project, no_deps_master_rebar, #{ignore => []}},
+                  {elvis_project, git_for_deps_rebar, #{ignore => []}}]
+       },
+      #{dirs => ["."],
+        filter => "elvis.config",
+        rules => [{elvis_project, old_configuration_format}]
+       }
+     ]
+    }
+   ]
+ }
+].
+</pre>
+
+{% endblock %}
