@@ -1,3 +1,4 @@
+%%% @doc Slave Nodes supervisor
 -module(gadget_slave_sup).
 -behavior(supervisor).
 
@@ -8,13 +9,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Public
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%% @private
 -spec start_child(atom()) -> {ok, pid()}.
 start_child(NodeName) -> supervisor:start_child(?MODULE, [NodeName]).
 
+%% @private
 -spec start_link() -> supervisor:startlink_ret().
 start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, {}).
 
+%% @private
 -spec init(_) ->
   {ok,
    {{simple_one_for_one, 5, 10},

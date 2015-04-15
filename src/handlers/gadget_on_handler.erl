@@ -1,3 +1,4 @@
+%%% @doc POST /on handler
 -module(gadget_on_handler).
 
 -export([ init/3
@@ -13,26 +14,31 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Handler Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% @private
 -spec init({atom(), atom()}, cowboy_req:req(), term()) ->
   {ok, Req, State} | {shutdown, Req, State}.
 init(_Transport, _Req, _Opts) ->
   {upgrade, protocol, cowboy_rest}.
 
+%% @private
 -spec rest_init(cowboy_req:req(), term()) ->
   {ok, cowboy_req:req(), #state{}}.
 rest_init(Req, _Opts) ->
   {ok, Req, #state{}}.
 
+%% @private
 -spec allowed_methods(cowboy_req:req(), term()) ->
   {[], cowboy_req:req(), term()}.
 allowed_methods(Req, State) ->
   {[<<"POST">>, <<"OPTIONS">>], Req, State}.
 
+%% @private
 -spec content_types_accepted(cowboy_req:req(), term()) ->
   {[], cowboy_req:req(), #state{}}.
 content_types_accepted(Req, State) ->
   {[{<<"application/json">>, handle_post}], Req, State}.
 
+%% @private
 -spec handle_post(cowboy_req:req(), #state{}) -> ok.
 handle_post(Req, State) ->
   {ok, Body, Req1} = cowboy_req:body(Req),
@@ -53,5 +59,6 @@ handle_post(Req, State) ->
       {true, Req1, State}
   end.
 
+%% @private
 -spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
 terminate(_Reason, _Req, _State) -> ok.

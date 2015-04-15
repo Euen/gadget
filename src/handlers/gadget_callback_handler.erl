@@ -1,3 +1,4 @@
+%%% @doc GET /callback handler
 -module(gadget_callback_handler).
 
 -export([ init/3
@@ -10,12 +11,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Handler Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%% @private
 -spec init({atom(), atom()}, cowboy_req:req(), term()) ->
   {ok, Req, State} | {shutdown, Req, State}.
 init(_Type, Req, _Opts) ->
   {ok, Req, #state{}}.
 
+%% @private
 -spec handle(cowboy_req:req(), #state{}) -> ok.
 handle(Req, State) ->
   Headers = [{<<"content-type">>, <<"text/plain">>}],
@@ -42,6 +44,7 @@ handle(Req, State) ->
       end
   end.
 
+%% @private
 -spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
 terminate(_Reason, _Req, _State) -> ok.
 

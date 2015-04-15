@@ -1,3 +1,4 @@
+%%% @doc GET /webhook/:tool handler
 -module(gadget_webhook_handler).
 
 -export([ init/3
@@ -10,12 +11,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Handler Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%% @private
 -spec init({atom(), atom()}, cowboy_req:req(), term()) ->
   {ok, Req, State} | {shutdown, Req, State}.
 init(_Type, Req, _Opts) ->
   {ok, Req, #state{}}.
 
+%% @private
 -spec handle(cowboy_req:req(), #state{}) -> ok.
 handle(Req, State) ->
   {ToolName, Req1} = cowboy_req:binding(tool, Req),
@@ -41,5 +43,6 @@ handle(Req, State) ->
       {ok, Req4, State}
   end.
 
+%% @private
 -spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
 terminate(_Reason, _Req, _State) -> ok.

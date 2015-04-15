@@ -1,3 +1,4 @@
+%%% @doc GET /repos handler
 -module(gadget_repos_handler).
 
 -export([ init/3
@@ -10,12 +11,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Handler Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%% @private
 -spec init({atom(), atom()}, cowboy_req:req(), term()) ->
   {ok, Req, State} | {shutdown, Req, State}.
 init(_Type, Req, _Opts) ->
   {ok, Req, #state{}}.
 
+%% @private
 -spec handle(cowboy_req:req(), #state{}) -> ok.
 handle(Req, State) ->
   case get_user(Req) of
@@ -59,14 +61,13 @@ get_user(Req) ->
       end
   end.
 
+%% @private
 -spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
 terminate(_Reason, _Req, _State) -> ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Private
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% @private
 %% @doc Returns a proplist with all user's repos and their status.
 repositories(Cred) ->
   Opts = #{type => <<"owner">>},
