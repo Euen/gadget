@@ -32,7 +32,8 @@
   on <emph>Github</emph>.
   It does not check <emph>private</emph> repos because checking repositories
   (for instance with dialyzer) requires Gadget to clone and compile them on
-  Inaka's servers and that's something that gets tricky easily with private ones.
+  Inaka's servers and that's something that can get very tricky very fast with
+  private repositories.
 </p>
 <p>
   <strong>Gadget</strong>'s code is not open-source but it's build up using many
