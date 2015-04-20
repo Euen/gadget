@@ -1,0 +1,67 @@
+{% extends "base.dtl" %}
+
+{% block title %}About Gadget{% endblock %}
+
+{% block content %}
+<h2>Introduction</h2>
+<p>
+  <strong>Gadget</strong> is a service created by
+  <a target="_blank" href="http://inaka.net">Inaka</a> that will integrate with
+  your <a target="_blank" href="http://github.com">Github</a> <emph>public</emph>
+  repositories and check all your Pull Requests with different tools, like
+  <code>dialyzer</code>, <code>xref</code> and
+  <a target="_blank" href="http://github.com/inaka/elvis"><code>elvis</code></a>.
+</p>
+<hr />
+<h2>Usage</h2>
+<p>
+  Once you've signed up with your Github user, you'll see a grid with a row per
+  repo and a column per tool. To [de]activate a tool for a repo, just click on
+  its <strong>On/Off</strong> button.
+</p>
+<p>
+  When a tool is activated for a repo, a webhook will be added to that particular
+  repository on Github. Then, each time somebody submits a pull request there,
+  <strong>Gadget</strong> will check the PR's code with that tool and report any
+  warnings as github comments.
+</p>
+<hr />
+<h2>Scope</h2>
+<p>
+  <strong>Gadget</strong> will only check <emph>public</emph> repositories hosted
+  on <emph>Github</emph>.
+  It does not check <emph>private</emph> repos because checking repositories
+  (for instance with dialyzer) requires Gadget to clone and compile them on
+  Inaka's servers and that's something that gets tricky easily with private ones.
+</p>
+<p>
+  <strong>Gadget</strong>'s code is not open-source but it's build up using many
+  open-source libraries like:
+</p>
+<br/>
+<dl>
+  <dt><a target="_blank" href="https://github.com/inaka/erlang-github">Erlang Github</a></dt>
+    <dd>Used to integrate with Github</dd>
+  <dt><a target="_blank" href="https://github.com/inaka/elvis">Elvis</a></dt>
+    <dd>Used as a tool</dd>
+  <dt><a target="_blank" href="https://github.com/ninenines/cowboy">Cowboy</a></dt>
+    <dd>As the web server that provides both the site and the API to integrate with Github</dd>
+  <dt><a target="_blank" href="https://github.com/basho/rebar">Rebar</a></dt>
+    <dd>To be able to compile rebar based projects</dd>
+  <dt><a target="_blank" href="https://github.com/inaka/xref_runner">Xref Runner</a></dt>
+    <dd>Used as the Xref tool</dd>
+  <dt><a target="_blank" href="https://github.com/inaka/sumo_db">Sumo DB</a></dt>
+    <dd>Used for persistency (Gadget keeps track of subscriptions) with a Mnesia backend</dd>
+  <dt><a target="_blank" href="https://github.com/duomark/epocxy">EPoCxy</a></dt>
+    <dd>Used to be able to run tool checks concurrently</dd>
+</dl>
+<h2>Customization</h2>
+<p>
+  If you want to have your own version of <strong>Gadget</strong> to use on your
+  private repos you can either build it on your own using the open source
+  libraries mentioned above or feel free to contact us by mail at
+  <a target="_blank" href="mailto:hello@inaka.net">hello@inaka.net</a> or meet
+  as at our open-source <a target="_blank" href="https://www.hipchat.com/gpBpW3SsT">hipchat room</a>
+</p>
+
+{% endblock %}
