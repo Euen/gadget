@@ -1,3 +1,4 @@
+%%% @doc General utilities for the project
 -module(gadget_utils).
 
 -export([ active_tools/1
@@ -19,14 +20,25 @@
                      number => pos_integer(),
                      text   => binary()
                     }.
--export_type([comment/0]).
+-type webhook_info() :: #{ tool => atom()
+                         , mod => atom()
+                         , name => string()
+                         , context => string()
+                         }.
+-type tool_info() :: #{ name => atom()
+                      , status => on | off
+                      , hook_id => binary()
+                      }.
+-export_type([webhook_info/0, comment/0, tool_info/0]).
 
+%% @doc Retrieves the list of active webhook tools
 -spec active_tools([map()]) -> [atom()].
 active_tools(Hooks) ->
   Tools = application:get_env(gadget, webhooks, #{}),
   [tool_info(ToolName, Tools, Hooks) || ToolName <- maps:keys(Tools)].
 
--spec tool_info(atom(), map(), [map()]) -> atom().
+%% @doc Retrieves information about a tool related to a particular repo
+-spec tool_info(atom(), map(), [map()]) -> tool_info().
 tool_info(ToolName, Tools, Hooks) ->
   ToolUrl = maps:get(ToolName, Tools),
   Fun =
@@ -54,13 +66,16 @@ tool_info(ToolName, Tools, Hooks) ->
    , hook_id => HookId
    }.
 
+%% @doc is the repo public?
 -spec is_public(map()) -> boolean().
 is_public(#{<<"private">> := Private}) -> not Private.
 
+%% @doc is the user an admin for that organization repo?
 -spec is_admin(map()) -> boolean().
 is_admin(#{<<"permissions">> := #{<<"admin">> := true}}) -> true;
 is_admin(_Repo) -> false.
 
+%% @doc make sure that there is a directory where to clone the repository
 -spec ensure_repo_dir(binary()) -> file:name_all().
 ensure_repo_dir(RepoName) ->
   TmpRoot = application:get_env(gadget, tmp_path, "/tmp/gadget"),
@@ -70,6 +85,7 @@ ensure_repo_dir(RepoName) ->
   ensure_dir(RepoDir),
   RepoDir.
 
+%% @doc clones the github repository in the specified path
 -spec clone_repo(file:name_all(), binary(), binary()) -> ok.
 clone_repo(RepoDir, Branch, GitUrl) ->
   Command =
@@ -78,6 +94,7 @@ clone_repo(RepoDir, Branch, GitUrl) ->
   run_command(Command),
   ok.
 
+%% @doc makes sure that a directory is deleted
 -spec ensure_dir_deleted(file:name_all()) -> string().
 ensure_dir_deleted(RepoDir) -> run_command(["rm -r ", RepoDir]).
 
@@ -87,6 +104,7 @@ ensure_dir(RepoDir) ->
     {error, Error} -> throw(Error)
   end.
 
+%% @doc runs a system command using os:cmd/1
 -spec run_command(iodata()) -> string().
 run_command(Command) ->
   lager:info("~s", [Command]),
@@ -95,11 +113,13 @@ run_command(Command) ->
   lager:debug("~n~s~n$ ~s~n~s~n~s", [HR, Command, Result, HR]),
   Result.
 
+%% @doc generates a "unique" id based on os:timestamp/0
 -spec unique_id() -> binary().
 unique_id() ->
   {X, Y, Z} = os:timestamp(),
   iolist_to_binary(io_lib:format("~7.10.0B-~7.10.0B-~7.10.0B", [X, Y, Z])).
 
+%% @doc runs make or rebar get-deps compile on a project
 -spec compile_project(file:name_all()) -> [string()].
 compile_project(RepoDir) ->
   Output =
@@ -135,6 +155,7 @@ rebarize_project(RepoDir) ->
   run_command(["cd ", RepoDir, "; ", Rebar, " --verbose get-deps compile"]),
   run_command(["cd ", RepoDir, "; ", Rebar, " skip_deps=true clean compile"]).
 
+%% @doc generates egithub_webhook:messages from a list of comments
 -spec messages_from_comments(string(), [comment()], [egithub_webhook:file()]) ->
   [egithub_webhook:message()].
 messages_from_comments(ToolName, Comments, GithubFiles) ->
@@ -199,15 +220,11 @@ commit_id_from_raw_url(Url, Filename) ->
   {match, [CommitId]} = re:run(Url, Regex, [{capture, all_but_first, binary}]),
   binary_to_list(CommitId).
 
+%% @doc runs a system command using os:cmd/1
 -spec format_message(string(), iodata()) -> binary().
 format_message(ToolName, Text) ->
   iolist_to_binary(["According to **", ToolName, "**:\n> ", Text]).
 
--type webhook_info() :: #{ tool => atom()
-                         , mod => atom()
-                         , name => string()
-                         , context => string()
-                         }.
 -spec webhook_info(binary()) -> webhook_info().
 webhook_info(Tool) ->
   #{ tool => binary_to_atom(Tool, utf8)

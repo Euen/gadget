@@ -5,8 +5,8 @@
 {% block content %}
     <h1>{{ user }}'s repos</h1>
 
-    <div class="repos">
-      <table>
+    <div class="repos section">
+      <table class="tools">
         <thead>
           <tr>
             <th></th>

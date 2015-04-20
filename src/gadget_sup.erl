@@ -1,3 +1,4 @@
+%%% @doc Main app supervisor
 -module(gadget_sup).
 -behavior(supervisor).
 
@@ -7,10 +8,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Public
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%% @private
 -spec start_link() -> supervisor:startlink_ret().
 start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, {}).
 
+%% @private
 -spec init(term()) -> term().
 init({}) ->
   {ok,

@@ -1,3 +1,4 @@
+%%% @doc Main application module
 -module(gadget).
 -behavior(application).
 
@@ -14,13 +15,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Application Behavior
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%% @private
 -spec start(application:start_type(), term()) ->
   {ok, pid()} | {ok, pid(), term()} | {error, term()}.
 start(_StartType, _StartArgs) ->
   gadget_sup:start_link().
 
--spec start_phase(atom(), application:start_type(), []) -> ok | {error, _}.
+%% @private
+-spec start_phase(atom(), application:start_type(), []) -> ok | {error, term()}.
 start_phase(cxy_ctl_setup, _StartType, []) ->
   case cxy_ctl:init([{webhook, unlimited, 1000, 100000}]) of
     true -> ok;
@@ -37,6 +39,8 @@ start_phase(start_cowboy_listeners, _StartType, []) ->
   Dispatch = cowboy_router:compile([
     {'_', [ %% Web UI
             {"/", gadget_plain_dtl_handler, [index_dtl]}
+          , {"/config", gadget_plain_dtl_handler, [config_dtl]}
+          , {"/about", gadget_plain_dtl_handler, [about_dtl]}
           , {"/repos", gadget_repos_handler, []}
           , {"/active-tools", gadget_on_handler, []}
           , {"/active-tools/:tool", gadget_off_handler, []}
@@ -62,6 +66,7 @@ start_phase(start_cowboy_listeners, _StartType, []) ->
     {error, {already_started, _}} -> ok
   end.
 
+%% @private
 -spec stop(term()) -> ok.
 stop(_State) ->
   cowboy:stop_listener(http_gadget),
@@ -71,10 +76,12 @@ stop(_State) ->
 %%% External functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec start() -> ok.
+%% @doc starts the application
+-spec start() -> {ok, [atom()]}.
 start() ->
   application:ensure_all_started(gadget).
 
+%% @doc runs a particular webhook on a PR
 -spec webhook(binary(), map()) -> ok | {error, term()}.
 webhook(ToolName, RequestMap) ->
   #{ mod := Mod
@@ -96,9 +103,11 @@ webhook(ToolName, RequestMap) ->
       cxy_ctl:execute_task(webhook, egithub_webhook, event, Args)
   end.
 
+%% @doc registers a repo for processing
 -spec register(string(), atom(), string()) -> gadget_repos:repo().
 register(Repo, Tool, Token) -> gadget_repos_repo:register(Repo, Tool, Token).
 
+%% @doc unregisters a repo
 -spec unregister(string(), atom()) -> 0|1.
 unregister(Repo, Tool) -> gadget_repos_repo:unregister(Repo, Tool).
 

@@ -1,3 +1,5 @@
+docs/
+doc/
 db/
 .eunit
 deps

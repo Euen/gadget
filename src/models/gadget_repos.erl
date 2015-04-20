@@ -1,3 +1,4 @@
+%%% @doc Github Repository Documents
 -module(gadget_repos).
 -author('elbrujohalcon@inaka.net').
 
@@ -19,6 +20,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% BEHAVIOUR CALLBACKS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% @hidden
 -spec sumo_schema() -> sumo:schema().
 sumo_schema() ->
   sumo:new_schema(?MODULE,
@@ -29,11 +31,13 @@ sumo_schema() ->
     , sumo:new_field(created_at,  datetime, [not_null])
     ]).
 
+%% @hidden
 -spec sumo_sleep(repo()) -> sumo:doc().
 sumo_sleep(Repo) ->
   #{tool := Tool} = Repo,
   Repo#{tool => atom_to_list(Tool)}.
 
+%% @hidden
 -spec sumo_wakeup(sumo:doc()) -> repo().
 sumo_wakeup(Doc) ->
   #{tool := Tool} = Doc,
@@ -42,6 +46,7 @@ sumo_wakeup(Doc) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PUBLIC API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% @doc creates a new repository
 -spec new(string(), atom(), string()) -> repo().
 new(Name, Tool, Token) ->
   #{ name => Name
@@ -50,5 +55,6 @@ new(Name, Tool, Token) ->
    , created_at => ktn_date:now_human_readable()
    }.
 
+%% @doc retrieves the repository token
 -spec token(repo()) -> string().
 token(#{token := Token}) -> Token.

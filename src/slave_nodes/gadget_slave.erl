@@ -1,3 +1,4 @@
+%%% @doc Salve erlang nodes manager
 -module(gadget_slave).
 -behaviour(gen_server).
 
@@ -19,13 +20,16 @@
                   , wait_for_eol => boolean()
                   }.
 
+%% @doc starts a new erlang node supervised by gadget_slave_sup
 -spec start(atom()) -> {ok, pid()}.
 start(NodeName) -> gadget_slave_sup:start_child(NodeName).
 
+%% @private
 -spec start_link(atom()) -> {ok, pid()}.
 start_link(NodeName) ->
   gen_server:start_link({local, NodeName}, ?MODULE, NodeName, []).
 
+%% @doc stops a node
 -spec stop(pid() | atom()) -> ok.
 stop(PidOrNodeName) -> gen_server:cast(PidOrNodeName, stop).
 

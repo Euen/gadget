@@ -1,8 +1,9 @@
 PROJECT = gadget
 
 CONFIG ?= config/app.config
+ERLDOCS ?= ./erldocs
 
-DEPS = sync elvis cowboy lager erlydtl merl egithub shotgun eper rebar xref_runner katana sumo epocxy
+DEPS = sync elvis cowboy lager erlydtl merl egithub shotgun eper rebar xref_runner katana sumo epocxy erldocs
 
 dep_sync = git git://github.com/inaka/sync.git 0.1.3
 dep_eper = git git://github.com/massemanet/eper.git 0.90.0
@@ -28,6 +29,9 @@ ERLC_OPTS += +warn_unused_vars +warn_export_all +warn_shadow_vars +warn_unused_i
 ERLC_OPTS += +warn_bif_clash +warn_unused_record +warn_deprecated_function +warn_obsolete_guard +strict_validation
 ERLC_OPTS += +warn_export_vars +warn_exported_vars +warn_missing_spec +warn_untyped_record +debug_info
 
+EDOC_OPTS := {source_path, ["src", "src/handlers", "src/models", "src/slave_nodes", "src/webhooks"]},
+EDOC_OPTS += {application, gadget}, {subpackages, false}
+
 include erlang.mk
 
 # Commont Test Config
@@ -37,3 +41,6 @@ CT_SUITES = gadget
 CT_OPTS = -cover test/gadget.coverspec  -erl_args -config config/test
 
 SHELL_OPTS= -name ${PROJECT}@`hostname` -s sync -s ${PROJECT} -config ${CONFIG}
+
+erldocs: app
+	${ERLDOCS} src/* -o docs/

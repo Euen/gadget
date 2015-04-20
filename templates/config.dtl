@@ -1,0 +1,76 @@
+{% extends "base.dtl" %}
+
+{% block title %}How to Configure Each Tool{% endblock %}
+
+{% block content %}
+<h2>Introduction</h2>
+<p>
+  <strong>Gadget</strong>'s webhooks can analyze any pull request as long as the
+  repo has a proper OTP folder structure.
+  Each tool provides its own way to let you configure it, as you can see below.
+</p>
+
+<h2>Elvis</h2>
+<p>
+  When the <strong>Elvis</strong>'s webhook runs on your pull request it checks
+  if there's an <strong>elvis.config</strong> file in your
+  <strong>master</strong> branch. If there is one then the configuration and the
+  rules defined in that file are used. In case there is none, the
+  <a target="_blank" href="https://github.com/inaka/elvis/wiki/Default-Rules-in-Elvis-Webhook">default rules</a>
+  are used.
+</p>
+<p>
+  A complete list of rules available can be found
+  <a href="https://github.com/inaka/elvis/wiki/Rules">here</a>.
+  Not all of these are part of the set of rules included in the default
+  configuration file.
+</p>
+
+<h2>Xref</h2>
+<p>
+  <strong>Xref</strong> uses <a target="_blank" href="http://github.com/inaka/xref_runner">Xref Runner</a>
+  to check your pull requests, that means you can add a
+  <strong>xref.config</strong> to your path and <strong>xref_runner</strong>
+  will use it when checking your code.
+</p>
+<p>
+  You can find more info on the format of the <strong>xref.config</strong> file
+  on <a target="_blank" href="https://github.com/inaka/xref_runner#how-to-use-it">xref_runner</a>
+  repository.
+</p>
+
+<h2>Compiler</h2>
+<p>
+  The <strong>Compiler</strong> tool tries to compile your project using either
+  <code>Makefile</code> or <code>rebar</code>.
+</p>
+<p>
+  If you have a <code>Makefile</code> file your root folder, the Compiler will
+  execute the following command and collect all compiler warnings.
+  <pre>
+    $ make</pre>
+</p>
+<p>
+  If you don't have <code>Makefile</code>, but you have a <code>rebar.config</code>
+  file instead, the Compiler will then run:
+  <pre>
+    $ rebar get-deps compile</pre>
+</p>
+
+<h2>Dialyzer</h2>
+<p>
+  <strong>Dialyzer</strong> only works with <a target="_blank" href="https://github.com/ninenines/erlang.mk">erlang.mk</a>
+  based projects for now.
+</p>
+<p>
+  If <strong>Dialyzer</strong> finds a <code>Makefile</code> in your root folder
+  it will add a <code>gadget.mk</code> file of its own and it will run something
+  very similar to the following list of commands and collect the warnings from
+  the last one of them:
+  <pre>
+    $ make
+    $ make plt
+    $ make dialyze</pre>
+</p>
+
+{% endblock %}

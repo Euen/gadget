@@ -1,9 +1,11 @@
+%%% @doc Compiler webhook
 -module(gadget_compiler_webhook).
 
 -behaviour(egithub_webhook).
 
 -export([handle_pull_request/3]).
 
+%% @private
 -spec handle_pull_request(
         egithub:credentials(), egithub_webhook:req_data(),
         [egithub_webhook:file()]) ->

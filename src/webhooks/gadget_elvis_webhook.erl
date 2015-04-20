@@ -1,3 +1,4 @@
+%%% @doc Elvis webhook
 -module(gadget_elvis_webhook).
 
 -behaviour(egithub_webhook).
@@ -6,7 +7,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Callbacks
-
+%% @private
 -spec handle_pull_request(
   egithub:credentials(), egithub_webhook:req_data(),
   [egithub_webhook:file()]) ->

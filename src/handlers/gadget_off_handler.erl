@@ -1,3 +1,4 @@
+%%% @doc POST /off handler
 -module(gadget_off_handler).
 
 -export([ init/3
@@ -12,20 +13,25 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Handler Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% @private
 -spec init(term(), cowboy_req:req(), term()) ->
   {term(), term(), term()}.
 init(_Transport, _Req, _Opts) ->
   {upgrade, protocol, cowboy_rest}.
 
+%% @private
 -spec rest_init(cowboy_req:req(), term()) ->
   {ok, cowboy_req:req(), #state{}}.
 rest_init(Req, _Opts) ->
   {ok, Req, #state{}}.
+
+%% @private
 -spec allowed_methods(cowboy_req:req(), term()) ->
   {[_], cowboy_req:req(), term()}.
 allowed_methods(Req, State) ->
   {[<<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
+%% @private
 -spec delete_resource(cowboy_req:req(), #state{}) -> ok.
 delete_resource(Req, State) ->
   {ToolNameBin, _} =  cowboy_req:binding(tool, Req),
@@ -52,5 +58,6 @@ delete_resource(Req, State) ->
   gadget:unregister(Repo, Tool),
   {true, Req, State}.
 
+%% @private
 -spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
 terminate(_Reason, _Req, _State) -> ok.
