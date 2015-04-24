@@ -39,6 +39,7 @@ start_phase(start_cowboy_listeners, _StartType, []) ->
   Dispatch = cowboy_router:compile([
     {'_', [ %% Web UI
             {"/", gadget_plain_dtl_handler, [index_dtl]}
+          , {"/favicon.ico", cowboy_static, {file, "assets/favicon.ico"}}
           , {"/config", gadget_plain_dtl_handler, [config_dtl]}
           , {"/about", gadget_plain_dtl_handler, [about_dtl]}
           , {"/repos", gadget_repos_handler, []}
