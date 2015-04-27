@@ -8,18 +8,19 @@
     , kernel
     , stdlib
     , erl_interface
+    , mnesia
+    , tools
+    , parsetools
+    , sasl
     , cowboy
     , lager
     , shotgun
     , elvis
     , erlydtl
     , egithub
-    , tools
-    , parsetools
     , xref_runner
     , dialyzer
     , katana
-    , mnesia
     , sumo_db
     , epocxy
     ]},
