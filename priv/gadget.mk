@@ -1,6 +1,6 @@
-DIALYZER_DIRS ?= --src -r src
-
 include Makefile
+
+DIALYZER_DIRS ?= --src -r src
 
 ifneq ($(wildcard $(DIALYZER_PLT)),)
 gadget-dialyze:
