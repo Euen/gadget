@@ -1,3 +1,5 @@
+DIALYZER_DIRS ?= --src -r src
+
 include Makefile
 
 ifneq ($(wildcard $(DIALYZER_PLT)),)
