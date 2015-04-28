@@ -36,7 +36,7 @@ allowed_methods(Req, State) ->
 -spec content_types_accepted(cowboy_req:req(), term()) ->
   {[], cowboy_req:req(), #state{}}.
 content_types_accepted(Req, State) ->
-  {[{<<"application/json">>, handle_post}], Req, State}.
+  {[{{<<"application">>, <<"json">>, '*'}, handle_post}], Req, State}.
 
 %% @private
 -spec handle_post(cowboy_req:req(), #state{}) -> ok.
