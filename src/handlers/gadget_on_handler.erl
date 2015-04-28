@@ -43,7 +43,7 @@ content_types_accepted(Req, State) ->
 handle_post(Req, State) ->
   {ok, Body, Req1} = cowboy_req:body(Req),
   Decoded = jiffy:decode(Body, [return_maps]),
-  Tool = binary_to_atom(maps:get(<<"tool">>, Decoded), utf8),
+  Tool = binary_to_atom(maps:get(<<"tool">>, Decoded, <<"">>), utf8),
 
   {ok, WebhookMap} = application:get_env(gadget, webhooks),
   case maps:get(Tool, WebhookMap, false) of
