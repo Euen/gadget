@@ -36,14 +36,14 @@ allowed_methods(Req, State) ->
 -spec content_types_accepted(cowboy_req:req(), term()) ->
   {[], cowboy_req:req(), #state{}}.
 content_types_accepted(Req, State) ->
-  {[{<<"application/json">>, handle_post}], Req, State}.
+  {[{{<<"application">>, <<"json">>, '*'}, handle_post}], Req, State}.
 
 %% @private
 -spec handle_post(cowboy_req:req(), #state{}) -> ok.
 handle_post(Req, State) ->
   {ok, Body, Req1} = cowboy_req:body(Req),
   Decoded = jiffy:decode(Body, [return_maps]),
-  Tool = binary_to_atom(maps:get(<<"tool">>, Decoded), utf8),
+  Tool = binary_to_atom(maps:get(<<"tool">>, Decoded, <<"">>), utf8),
 
   {ok, WebhookMap} = application:get_env(gadget, webhooks),
   case maps:get(Tool, WebhookMap, false) of
