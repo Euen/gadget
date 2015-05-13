@@ -15,9 +15,12 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
    , <<"pull_request">> := PR
    } = ReqData,
   #{ <<"full_name">> := RepoName
-   , <<"git_url">> := GitUrl
    } = Repository,
-  #{<<"head">> := #{ <<"ref">> := Branch}} = PR,
+  #{ <<"head">> :=
+      #{ <<"ref">> := Branch
+       , <<"repo">> := #{<<"clone_url">> := GitUrl}
+       }
+   } = PR,
 
   try gadget_utils:ensure_repo_dir(RepoName) of
     RepoDir ->

@@ -11,15 +11,16 @@
         [egithub_webhook:file()]) ->
         {ok, [egithub_webhook:message()]} | {error, term()}.
 handle_pull_request(Cred, ReqData, GithubFiles) ->
-  #{  <<"repository">> := Repository
-    , <<"pull_request">> := PR
-    } = ReqData,
-  #{  <<"full_name">> := RepoName
-    , <<"git_url">> := GitUrl
-    } = Repository,
+  #{ <<"repository">> := Repository
+   , <<"pull_request">> := PR
+   } = ReqData,
+  #{ <<"full_name">> := RepoName
+   } = Repository,
   #{ <<"head">> :=
-      #{ <<"ref">> := Branch}
-    } = PR,
+      #{ <<"ref">> := Branch
+       , <<"repo">> := #{<<"clone_url">> := GitUrl}
+       }
+   } = PR,
 
   try gadget_utils:ensure_repo_dir(RepoName) of
     RepoDir ->
