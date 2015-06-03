@@ -40,23 +40,7 @@ delete_resource(Req, State) ->
   %Cred = egithub:oauth(Token),
 
   Tool = binary_to_atom(ToolNameBin, utf8),
-  %%%%
-% {ok, Hooks} = egithub:hooks(Cred, Repo),
-% EnabledTools = gadget_utils:active_tools(Hooks),
-% HIds =
-%   [HookId
-%    || #{ hook_id := HookId
-%        , name    := ToolName
-%        , status  := on
-%        } <- EnabledTools
-%    , ToolName == Tool
-%    ],
-% ok =
-%   case HIds of
-%     [] -> ok;
-%     [Id] -> egithub:delete_webhook(Cred, Repo, Id)
-%   end,
-  gadget:unregister(Repo, Tool,Token),
+  gadget_core:unregister(Repo, Tool,Token),
   {true, Req, State}.
 
 %% @private

@@ -40,18 +40,3 @@ unregister(Repo, Tool, Token) ->
       [Id] -> egithub:delete_webhook(Cred, Repo, Id)
     end,
   gadget_repos_repo:unregister(Repo, Tool).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Not exported functions
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec github_credentials() -> egithub:credentials().
-github_credentials() ->
-  User = application:get_env(gadget, github_user, ""),
-  Password = application:get_env(gadget, github_password, ""),
-  egithub:basic_auth(User, Password).
-
--spec get_repo_name(map()) -> string().
-get_repo_name(#{body := Body}) ->
-  EventData = jiffy:decode(Body, [return_maps]),
-  #{<<"repository">> := Repository} = EventData,
-  maps:get(<<"full_name">>, Repository, <<>>).

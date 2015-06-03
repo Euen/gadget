@@ -46,7 +46,7 @@ handle_post(Req, State) ->
   Tool = binary_to_atom(maps:get(<<"tool">>, Decoded, <<"">>), utf8),
   {Token, _} = cowboy_req:cookie(<<"token">>, Req, ""),
   Repo = maps:get(<<"repo">>, Decoded, ""),
-  Result = gadget:register(Repo, Tool, Token),
+  Result = gadget_core:register(Repo, Tool, Token),
   {Result, Req1, State}.
 
 %% @private
