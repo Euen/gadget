@@ -3,7 +3,6 @@
 
 -export([ register/3
         , unregister/3
-        , github_credentials/0 %%QUITAR!!!!!!!!!!
         ]).
 
 %% @doc registers a repo for processing
