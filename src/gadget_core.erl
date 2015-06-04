@@ -14,7 +14,16 @@ register(Repo, Tool, Token) ->
     WebhookUrl ->
       Cred = egithub:oauth(Token),
       {ok, _Hook} =
-        egithub:create_webhook(Cred, Repo, WebhookUrl, ["pull_request"]),
+      Result = egithub:create_webhook(Cred, Repo, WebhookUrl, ["pull_request"]),
+    case check_result(Result) of
+      {ok, _} ->
+        gadget_repos_repo:register(Repo, Tool, Token),
+        io:format("Webhook added!~n"),
+        true;
+      {error, {"422", _, _}} ->
+        io:format("Webhook already exists.~n"),
+        false
+    end,
       gadget_repos_repo:register(Repo, Tool, Token),
       true
   end.
@@ -39,3 +48,11 @@ unregister(Repo, Tool, Token) ->
       [Id] -> egithub:delete_webhook(Cred, Repo, Id)
     end,
   gadget_repos_repo:unregister(Repo, Tool).
+
+-spec check_result(term()) -> term().
+check_result({error, {"401", _, _}}) ->
+  throw(unauthorized);
+check_result({error, {"404", _, _}}) ->
+  throw(not_found);
+check_result(Result) ->
+  Result.
