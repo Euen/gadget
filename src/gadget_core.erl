@@ -19,13 +19,12 @@ register(Repo, Tool, Token) ->
       {ok, _} ->
         gadget_repos_repo:register(Repo, Tool, Token),
         io:format("Webhook added!~n"),
+        gadget_repos_repo:register(Repo, Tool, Token),
         true;
       {error, {"422", _, _}} ->
         io:format("Webhook already exists.~n"),
         false
-    end,
-      gadget_repos_repo:register(Repo, Tool, Token),
-      true
+    end
   end.
 
 %% @doc unregisters a repo
