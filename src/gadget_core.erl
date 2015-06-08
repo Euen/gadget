@@ -49,6 +49,8 @@ unregister(Repo, Tool, Token) ->
   gadget_repos_repo:unregister(Repo, Tool).
 
 -spec check_result(term()) -> term().
+check_result({error, {"422", _, _}}) ->
+  throw(webhook_already_exists);
 check_result({error, {"401", _, _}}) ->
   throw(unauthorized);
 check_result({error, {"404", _, _}}) ->
