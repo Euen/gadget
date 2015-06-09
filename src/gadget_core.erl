@@ -13,18 +13,14 @@ register(Repo, Tool, Token) ->
     false -> false;
     WebhookUrl ->
       Cred = egithub:oauth(Token),
-      {ok, _Hook} =
-      Result = egithub:create_webhook(Cred, Repo, WebhookUrl, ["pull_request"]),
-    case check_result(Result) of
-      {ok, _} ->
+      try
+        Result = egithub:create_webhook(Cred, Repo, WebhookUrl, ["pull_request"]),
+        {ok, _} = check_result(Result),
         gadget_repos_repo:register(Repo, Tool, Token),
-        io:format("Webhook added!~n"),
-        gadget_repos_repo:register(Repo, Tool, Token),
-        true;
-      {error, {"422", _, _}} ->
-        io:format("Webhook already exists.~n"),
-        false
-    end
+        true
+      catch
+        _ -> false
+      end
   end.
 
 %% @doc unregisters a repo
