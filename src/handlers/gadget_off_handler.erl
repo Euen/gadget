@@ -37,8 +37,6 @@ delete_resource(Req, State) ->
   {ToolNameBin, _} =  cowboy_req:binding(tool, Req),
   {Token, _} = cowboy_req:cookie(<<"token">>, Req, ""),
   {Repo, _} = cowboy_req:qs_val(<<"repo">>, Req, ""),
-  %Cred = egithub:oauth(Token),
-
   Tool = binary_to_atom(ToolNameBin, utf8),
   gadget_core:unregister(Repo, Tool,Token),
   {true, Req, State}.
