@@ -7,7 +7,6 @@
         , stop/1
         , start_phase/3
         , webhook/2
-        ,github_credentials/0
         ]).
 
 

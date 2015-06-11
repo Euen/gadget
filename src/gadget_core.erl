@@ -1,4 +1,4 @@
-%%% @doc Main application module
+%%% @doc gadget_core module
 -module(gadget_core).
 
 -export([register/3]).
@@ -15,7 +15,8 @@ register(Repo, Tool, Token) ->
     WebhookUrl ->
       Cred = egithub:oauth(Token),
       try
-        Result = egithub:create_webhook(Cred, Repo, WebhookUrl, ["pull_request"]),
+        Result =
+          egithub:create_webhook(Cred, Repo, WebhookUrl, ["pull_request"]),
         {ok, _} = check_result(Result),
         gadget_repos_repo:register(Repo, Tool, Token),
         true

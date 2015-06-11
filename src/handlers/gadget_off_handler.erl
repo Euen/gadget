@@ -38,7 +38,7 @@ delete_resource(Req, State) ->
   {Token, _} = cowboy_req:cookie(<<"token">>, Req, ""),
   {Repo, _} = cowboy_req:qs_val(<<"repo">>, Req, ""),
   Tool = binary_to_atom(ToolNameBin, utf8),
-  gadget_core:unregister(Repo, Tool,Token),
+  gadget_core:unregister(Repo, Tool, Token),
   {true, Req, State}.
 
 %% @private
