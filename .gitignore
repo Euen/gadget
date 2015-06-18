@@ -13,6 +13,6 @@ rel/example_project
 .rebar
 log*/
 config/app.config
-.erlang.mk.packages.v2
+.erlang.mk*
 _rel/
 relx
