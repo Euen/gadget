@@ -17,3 +17,4 @@ config/app.config
 _rel/
 relx
 Mnesia*
+elvis
