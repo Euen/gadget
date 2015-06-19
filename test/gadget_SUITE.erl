@@ -107,16 +107,15 @@ test_compiler(Config) ->
 
 
 -spec basic_test(atom(), config()) -> config().
-basic_test( Webhook, Config) ->
+basic_test(Webhook, Config) ->
   Header =
     #{  <<"Content-Type">> => <<"application/json">>
       , <<"x-github-event">> =>  <<"ping">>},
-    Token = gadget_test_utils:get_github_client_secret(),
+  Token = gadget_test_utils:get_github_client_secret(),
   gadget_repos_repo:register("gadget-tester/user-repo", Webhook, Token),
-  {ok, JsonBody} = file:read_file("../../priv/initial-payload.json"),
+  {ok, JsonBody} =
+    file:read_file("../../priv/initial-payload.json"),
   {ok, Response} =
-  gadget_test_utils:api_call(get, "/webhook/compiler/", Header, JsonBody),
-  #{ status_code := 200
-   , body := <<"Event processed.">>
-   } = Response,
+    gadget_test_utils:api_call(get, "/webhook/compiler/", Header, JsonBody),
+  #{ status_code := 200, body := <<"Event processed.">>} = Response,
   Config.

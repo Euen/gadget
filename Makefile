@@ -29,7 +29,7 @@ ERLC_OPTS += +warn_unused_vars +warn_export_all +warn_shadow_vars +warn_unused_i
 ERLC_OPTS += +warn_bif_clash +warn_unused_record +warn_deprecated_function +warn_obsolete_guard +strict_validation
 ERLC_OPTS += +warn_export_vars +warn_exported_vars +warn_missing_spec +warn_untyped_record +debug_info
 
-EDOC_OPTS := {source_path, ["test",src", "src/handlers", "src/models", "src/slave_nodes", "src/webhooks"]},
+EDOC_OPTS := {source_path, ["src", "src/handlers", "src/models", "src/slave_nodes", "src/webhooks"]},
 EDOC_OPTS += {application, gadget}, {subpackages, false}
 
 include erlang.mk
@@ -37,7 +37,7 @@ include erlang.mk
 # Commont Test Config
 
 TEST_ERLC_OPTS += +'{parse_transform, lager_transform}'
-CT_OPTS = -erl_args -config ${CONFIG}
+CT_OPTS = -cover test/gadget.coverspec -erl_args -config ${CONFIG}
 
 SHELL_OPTS= -name ${PROJECT}@`hostname` -s sync -s ${PROJECT} -config ${CONFIG}
 
