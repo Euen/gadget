@@ -1,0 +1,13 @@
+%% Specific modules to include in cover.
+{
+ incl_mods,
+ [
+  gadget,
+  gadget_repos,
+  gadget_repos_repo,
+  gadget_login_handler,
+  gadget_status_handler,
+  gadget_repos_handler,
+  gadget_webhook_handler
+ ]
+}.

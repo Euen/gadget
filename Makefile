@@ -3,7 +3,7 @@ PROJECT = gadget
 CONFIG ?= config/app.config
 ERLDOCS ?= ./erldocs
 
-DEPS = sync elvis cowboy lager erlydtl merl egithub shotgun eper rebar xref_runner katana sumo epocxy
+DEPS = sync elvis cowboy lager erlydtl merl egithub shotgun eper rebar xref_runner katana sumo epocxy jiffy
 
 dep_sync = git git://github.com/inaka/sync.git 0.1.3
 dep_eper = git git://github.com/massemanet/eper.git 0.90.0
@@ -37,10 +37,20 @@ include erlang.mk
 # Commont Test Config
 
 TEST_ERLC_OPTS += +'{parse_transform, lager_transform}'
-CT_SUITES = gadget
-CT_OPTS = -cover test/gadget.coverspec  -erl_args -config config/test
+CT_OPTS = -cover test/gadget.coverspec -erl_args -config ${CONFIG}
 
 SHELL_OPTS= -name ${PROJECT}@`hostname` -s sync -s ${PROJECT} -config ${CONFIG}
 
 erldocs: app
 	${ERLDOCS} src/* -o docs/
+
+testshell:
+	erl -pa ebin -pa deps/*/ebin -pa test config ${CONFIG} -s sync
+
+quicktests: app build-ct-suites
+	@if [ -d "test" ] ; \
+	then \
+		mkdir -p logs/ ; \
+		$(CT_RUN) -suite $(addsuffix _SUITE,$(CT_SUITES)) $(CT_OPTS) ; \
+	fi
+	$(gen_verbose) rm -f test/*.beam
