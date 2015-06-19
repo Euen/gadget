@@ -1,8 +1,6 @@
 
 -module(gadget_SUITE).
 
--author('David Cao <david.cao@inakanetworks.com>').
-
 -export([all/0]).
 -export([init_per_suite/1]).
 -export([end_per_suite/1]).
@@ -11,9 +9,10 @@
 -export([test_status/1]).
 -export([test_about/1]).
 -export([test_login/1]).
-
-
-
+-export([test_elvis/1]).
+-export([test_compiler/1]).
+-export([test_xref/1]).
+-export([test_dialyzer/1]).
 
 -type config() :: [{atom(), term()}].
 
@@ -40,9 +39,13 @@ all() ->
 
 -spec init_per_suite(config()) -> config().
 init_per_suite(Config) ->
+  application:stop(mnesia),
+  mnesia:create_schema([node()]),
+  {ok, _} = application:ensure_all_started(mnesia),
   application:ensure_all_started(mnesia),
   application:ensure_all_started(cowboy),
   application:ensure_all_started(sumo_db),
+  application:ensure_all_started(lager),
   application:ensure_all_started(gadget),
   sumo:create_schema(),
   Config.
@@ -86,18 +89,34 @@ test_login(Config) ->
   #{status_code := 302} = Response,
   Config.
 
-%%-spec test_status(config()) -> config().
-%%test_status(Config) ->
-%%
-%%  Header = #{ <<"Content-Type">> => <<"application/json">>},
-%%  Body = #{},
-%%  JsonBody = jiffy:encode(Body),
-%%  {ok, Response} =
-%%  cnf_test_utils:api_call(get, "/status", Header,  JsonBody),
-%%  #{status_code := 204} = Response,
-%%  #{headers := ResponseHeaders} = Response,
-%%  Location = proplists:get_value(<<"location">>, ResponseHeaders),
-%%  <<"http://localhost/contents/", _Id/binary>> = Location,
-%%  Config.
-%%  ok.
-%%
+-spec test_elvis(config()) -> config().
+test_elvis(Config) ->
+  basic_test(elvis, Config).
+
+-spec test_dialyzer(config()) -> config().
+test_dialyzer(Config) ->
+  basic_test(dialyzer, Config).
+
+-spec test_xref(config()) -> config().
+test_xref(Config) ->
+  basic_test(xref, Config).
+
+-spec test_compiler(config()) -> config().
+test_compiler(Config) ->
+  basic_test(compiler, Config).
+
+
+-spec basic_test(atom(), config()) -> config().
+basic_test( Webhook, Config) ->
+  Header =
+    #{  <<"Content-Type">> => <<"application/json">>
+      , <<"x-github-event">> =>  <<"ping">>},
+    Token = gadget_test_utils:get_github_client_secret(),
+  gadget_repos_repo:register("gadget-tester/user-repo", Webhook, Token),
+  {ok, JsonBody} = file:read_file("../../priv/initial-payload.json"),
+  {ok, Response} =
+  gadget_test_utils:api_call(get, "/webhook/compiler/", Header, JsonBody),
+  #{ status_code := 200
+   , body := <<"Event processed.">>
+   } = Response,
+  Config.

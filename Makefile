@@ -37,7 +37,7 @@ include erlang.mk
 # Commont Test Config
 
 TEST_ERLC_OPTS += +'{parse_transform, lager_transform}'
-CT_OPTS = -erl_args -config config/app.config
+CT_OPTS = -erl_args -config ${CONFIG}
 
 SHELL_OPTS= -name ${PROJECT}@`hostname` -s sync -s ${PROJECT} -config ${CONFIG}
 
@@ -45,7 +45,7 @@ erldocs: app
 	${ERLDOCS} src/* -o docs/
 
 testshell:
-	erl -pa ebin -pa deps/*/ebin -pa test config config/app.config -s sync
+	erl -pa ebin -pa deps/*/ebin -pa test config ${CONFIG} -s sync
 
 quicktests: app build-ct-suites
 	@if [ -d "test" ] ; \

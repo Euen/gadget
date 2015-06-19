@@ -16,3 +16,4 @@ config/app.config
 .erlang.mk*
 _rel/
 relx
+Mnesia*
