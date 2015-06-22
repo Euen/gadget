@@ -28,7 +28,7 @@ handle(Req, State) ->
           null -> maps:get(<<"login">>, User);
           Name1 -> Name1
         end,
-      Repos = gadget_core:repositories(Cred),
+      Repos =  gadget_core:repositories(Cred),
       WebhookMap = application:get_env(gadget, webhooks, #{}),
       Tools = maps:keys(WebhookMap),
       Variables = [ {tools, Tools}

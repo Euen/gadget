@@ -61,7 +61,7 @@ repositories(Cred) ->
 
   PublicRepos =
     [Repo || Repo <- Repos ++ AllOrgsRepos,
-             gadget_utils:is_admin(Repo), gadget_utils:is_public(Repo)],
+             gadget_utils:is_admin(Repo)],
 
   lists:sort([repo_info(Cred, Repo) || Repo <- PublicRepos]).
 
@@ -93,3 +93,4 @@ check_result({error, {"404", _, _}}) ->
   throw(not_found);
 check_result(Result) ->
   Result.
+
