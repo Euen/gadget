@@ -33,7 +33,7 @@
    gadget,
    [
     %% OAuth
-    {github_scope, "public_repo,repo:status,read:org"},
+    {github_scope, "repo,repo:status,read:org"},
     {github_client_id, "bcn98345nv2098682c69"},
     {github_client_secret, "98vb98nbsbfgdjdlh87s986s08724958nfgdv"},
     %% Webhooks
