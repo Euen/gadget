@@ -37,25 +37,8 @@ delete_resource(Req, State) ->
   {ToolNameBin, _} =  cowboy_req:binding(tool, Req),
   {Token, _} = cowboy_req:cookie(<<"token">>, Req, ""),
   {Repo, _} = cowboy_req:qs_val(<<"repo">>, Req, ""),
-  Cred = egithub:oauth(Token),
-
   Tool = binary_to_atom(ToolNameBin, utf8),
-  {ok, Hooks} = egithub:hooks(Cred, Repo),
-  EnabledTools = gadget_utils:active_tools(Hooks),
-  HIds =
-    [HookId
-     || #{ hook_id := HookId
-         , name    := ToolName
-         , status  := on
-         } <- EnabledTools
-     , ToolName == Tool
-     ],
-  ok =
-    case HIds of
-      [] -> ok;
-      [Id] -> egithub:delete_webhook(Cred, Repo, Id)
-    end,
-  gadget:unregister(Repo, Tool),
+  gadget_core:unregister(Repo, Tool, Token),
   {true, Req, State}.
 
 %% @private

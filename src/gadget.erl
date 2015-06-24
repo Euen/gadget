@@ -8,9 +8,7 @@
         , start_phase/3
         , webhook/2
         ]).
--export([ register/3
-        , unregister/2
-        ]).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Application Behavior
@@ -104,13 +102,11 @@ webhook(ToolName, RequestMap) ->
       cxy_ctl:execute_task(webhook, egithub_webhook, event, Args)
   end.
 
-%% @doc registers a repo for processing
--spec register(string(), atom(), string()) -> gadget_repos:repo().
-register(Repo, Tool, Token) -> gadget_repos_repo:register(Repo, Tool, Token).
-
-%% @doc unregisters a repo
--spec unregister(string(), atom()) -> 0|1.
-unregister(Repo, Tool) -> gadget_repos_repo:unregister(Repo, Tool).
+-spec get_repo_name(map()) -> string().
+get_repo_name(#{body := Body}) ->
+  EventData = jiffy:decode(Body, [return_maps]),
+  #{<<"repository">> := Repository} = EventData,
+  maps:get(<<"full_name">>, Repository, <<>>).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Not exported functions
@@ -121,8 +117,3 @@ github_credentials() ->
   Password = application:get_env(gadget, github_password, ""),
   egithub:basic_auth(User, Password).
 
--spec get_repo_name(map()) -> string().
-get_repo_name(#{body := Body}) ->
-  EventData = jiffy:decode(Body, [return_maps]),
-  #{<<"repository">> := Repository} = EventData,
-  maps:get(<<"full_name">>, Repository, <<>>).

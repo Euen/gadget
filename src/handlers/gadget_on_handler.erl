@@ -44,20 +44,10 @@ handle_post(Req, State) ->
   {ok, Body, Req1} = cowboy_req:body(Req),
   Decoded = jiffy:decode(Body, [return_maps]),
   Tool = binary_to_atom(maps:get(<<"tool">>, Decoded, <<"">>), utf8),
-
-  {ok, WebhookMap} = application:get_env(gadget, webhooks),
-  case maps:get(Tool, WebhookMap, false) of
-    false ->
-      {false, Req1, State};
-    WebhookUrl ->
-      Repo = maps:get(<<"repo">>, Decoded),
-      {Token, _} = cowboy_req:cookie(<<"token">>, Req, ""),
-      Cred = egithub:oauth(Token),
-      {ok, _Hook} =
-        egithub:create_webhook(Cred, Repo, WebhookUrl, ["pull_request"]),
-      gadget:register(Repo, Tool, Token),
-      {true, Req1, State}
-  end.
+  {Token, _} = cowboy_req:cookie(<<"token">>, Req, ""),
+  Repo = maps:get(<<"repo">>, Decoded, ""),
+  Result = gadget_core:register(Repo, Tool, Token),
+  {Result, Req1, State}.
 
 %% @private
 -spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
