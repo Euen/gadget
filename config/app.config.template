@@ -38,10 +38,10 @@
     {github_client_secret, "98vb98nbsbfgdjdlh87s986s08724958nfgdv"},
     %% Webhooks
     {webhooks,
-      #{elvis     => "http://gadget.inakalabs.com/webhook/elvis",
-        compiler  => "http://gadget.inakalabs.com/webhook/compiler",
-        xref      => "http://gadget.inakalabs.com/webhook/xref",
-        dialyzer  => "http://gadget.inakalabs.com/webhook/dialyzer"
+      #{elvis     => "http://gadget-internal.inakalabs.com/webhook/elvis",
+        compiler  => "http://gadget-internal.inakalabs.com/webhook/compiler",
+        xref      => "http://gadget-internal.inakalabs.com/webhook/xref",
+        dialyzer  => "http://gadget-internal.inakalabs.com/webhook/dialyzer"
        }
     },
     {pr_actions, [<<"opened">>, <<"reopened">>, <<"synchronize">>]},
