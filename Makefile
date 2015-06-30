@@ -3,8 +3,10 @@ PROJECT = gadget
 CONFIG ?= config/app.config
 ERLDOCS ?= ./erldocs
 
-DEPS = sync elvis cowboy lager erlydtl merl egithub shotgun eper rebar xref_runner katana sumo epocxy
+DEPS = sync elvis cowlib ranch cowboy lager erlydtl merl egithub shotgun eper rebar xref_runner katana sumo epocxy
 
+dep_cowlib = git https://github.com/ninenines/cowlib.git 1.0.0
+dep_ranch = git https://github.com/ninenines/ranch.git 1.0.0
 dep_sync = git git://github.com/inaka/sync.git 0.1.3
 dep_eper = git git://github.com/massemanet/eper.git 0.90.0
 dep_egithub = git git://github.com/inaka/erlang-github.git 0.1.15
