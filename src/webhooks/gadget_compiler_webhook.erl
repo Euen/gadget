@@ -18,7 +18,7 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
    } = Repository,
   #{ <<"head">> :=
       #{ <<"ref">> := Branch
-       , <<"repo">> := #{<"ssh_url">> := GitUrl}
+       , <<"repo">> := #{<<"ssh_url">> := GitUrl}
        }
    } = PR,
 
