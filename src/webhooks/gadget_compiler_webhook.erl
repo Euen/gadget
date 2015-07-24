@@ -60,6 +60,11 @@ extract_errors([], _Regex, Errors) -> Errors;
 extract_errors([Line|Lines], Regex, Errors) ->
   NewErrors =
     case re:run(Line, Regex, [{capture, all_but_first, binary}]) of
+      {match, [File, <<>>, Comment]} ->
+        [#{ file   => File
+          , number => 0
+          , text   => Comment
+          } | Errors];
       {match, [File, Number, Comment]} ->
         [#{ file   => File
           , number => binary_to_integer(Number)
