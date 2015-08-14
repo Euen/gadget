@@ -49,6 +49,7 @@ TEST_ERLC_OPTS += +'{parse_transform, lager_transform}' +debug_info
 CT_OPTS = -cover test/gadget.coverspec -erl_args -config ${CONFIG}
 
 SHELL_OPTS= -name ${PROJECT}@`hostname` -s sync -s ${PROJECT} -config ${CONFIG}
+RUN_OPTS= -name gadget_internal@127.0.0.1 -setcookie gadget_internal -s ${PROJECT} -config ${CONFIG} -noshell
 
 erldocs: app
 	${ERLDOCS} src/* -o docs/
