@@ -42,7 +42,6 @@ TEST_ERLC_OPTS += +'{parse_transform, lager_transform}'
 CT_OPTS = -cover test/gadget.coverspec -erl_args -config ${CONFIG}
 
 SHELL_OPTS= -name ${PROJECT}@`hostname` -s sync -s ${PROJECT} -config ${CONFIG}
-RUN_OPTS= -name ${PROJECT}@127.0.0.1 -setcookie gadget -s ${PROJECT} -config ${CONFIG} -noshell
 
 erldocs: app
 	${ERLDOCS} src/* -o docs/
@@ -57,6 +56,3 @@ quicktests: app build-ct-suites
 		$(CT_RUN) -suite $(addsuffix _SUITE,$(CT_SUITES)) $(CT_OPTS) ; \
 	fi
 	$(gen_verbose) rm -f test/*.beam
-
-run:
-	$(gen_verbose) erl $(SHELL_PATH) $(RUN_OPTS)
