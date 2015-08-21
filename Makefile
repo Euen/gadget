@@ -57,6 +57,3 @@ quicktests: app build-ct-suites
 		$(CT_RUN) -suite $(addsuffix _SUITE,$(CT_SUITES)) $(CT_OPTS) ; \
 	fi
 	$(gen_verbose) rm -f test/*.beam
-
-run:
-	$(gen_verbose) erl $(SHELL_PATH) $(RUN_OPTS)
