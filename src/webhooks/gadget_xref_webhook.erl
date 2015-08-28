@@ -81,9 +81,9 @@ set_cwd(RepoNode, RepoDir) ->
   rpc:call(RepoNode, file, set_cwd, [RepoDir]).
 
 run_xref(RepoNode) ->
-  RunnerEbin = filename:dirname(code:which(xref_runner)),
+  RunnerEbin = filename:absname(filename:dirname(code:which(xref_runner))),
   Deps = rpc:call(RepoNode, filelib, wildcard, ["deps/*/ebin"]),
-  ok = rpc:call(RepoNode, code, add_pathsa, [[RunnerEbin|Deps]]),
+  ok = rpc:call(RepoNode, code, add_pathsa, [[RunnerEbin | Deps]]),
   rpc:call(RepoNode, xref_runner, check, []).
 
 generate_comment(RepoDir, XrefWarning) ->
