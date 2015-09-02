@@ -107,11 +107,18 @@ ensure_dir(RepoDir) ->
 %% @doc runs a system command using os:cmd/1
 -spec run_command(iodata()) -> string().
 run_command(Command) ->
-  lager:info("~s", [Command]),
-  Result = os:cmd(Command),
   HR = lists:duplicate(80, $~),
-  lager:debug("~n~s~n$ ~s~n~s~n~s", [HR, Command, Result, HR]),
-  Result.
+  lager:info(HR),
+  lager:info("$ ~s", [Command]),
+  Opts =  #{log_fun => fun(X) -> lager:info("~s", [X]) end},
+  case ktn_os:command(Command, Opts) of
+    {0, Result} ->
+      lager:info(HR),
+      Result;
+    {ExitStatus, _Result} ->
+      lager:info(HR),
+      throw({error, {exit_status, ExitStatus}})
+  end.
 
 %% @doc generates a "unique" id based on os:timestamp/0
 -spec unique_id() -> binary().
@@ -176,11 +183,11 @@ messages_from_comment(ToolName, Comment, GithubFiles) ->
    } = Comment,
   MatchingFiles =
     [GithubFile
-    || #{ <<"filename">>  := Filename
-        , <<"status">>    := Status
-        } = GithubFile <- GithubFiles
-      , Filename == File
-      , Status /= <<"deleted">>
+     || #{ <<"filename">>  := Filename
+         , <<"status">>    := Status
+         } = GithubFile <- GithubFiles
+          , Filename == File
+          , Status /= <<"deleted">>
     ],
   case MatchingFiles of
     [] -> [];
@@ -195,7 +202,7 @@ messages_from_comment(Filename, 0, Text, File) ->
       path      => Filename,
       position  => 0,
       text      => Text
-      }
+     }
   ];
 messages_from_comment(Filename, Line, Text, File) ->
   #{ <<"patch">>      := Patch
@@ -207,7 +214,7 @@ messages_from_comment(Filename, Line, Text, File) ->
           path      => Filename,
           position  => Position,
           text      => Text
-          }
+         }
       ];
     not_found ->
       lager:info("Line ~p does not belong to file's diff.", [Line]),

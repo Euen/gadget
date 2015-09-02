@@ -18,7 +18,7 @@ dep_merl = git git://github.com/richcarl/merl.git cc816c38
 dep_shotgun = git git://github.com/inaka/shotgun.git 0.1.11
 dep_rebar = git git://github.com/basho/rebar.git 2.0.0
 dep_xref_runner = git git://github.com/inaka/xref_runner.git 0.2.2
-dep_katana =  git git://github.com/inaka/erlang-katana.git 0.2.4
+dep_katana =  git git://github.com/inaka/erlang-katana.git 0.2.11
 dep_sumo = git git://github.com/inaka/sumo_db.git 0.3.8
 dep_epocxy = git git://github.com/duomark/epocxy.git 0.9.8e
 
