@@ -184,11 +184,11 @@ messages_from_comment(ToolName, Comment, GithubFiles) ->
    } = Comment,
   MatchingFiles =
     [GithubFile
-     || #{ <<"filename">>  := Filename
-         , <<"status">>    := Status
-         } = GithubFile <- GithubFiles
-          , Filename == File
-          , Status /= <<"deleted">>
+    || #{ <<"filename">>  := Filename
+        , <<"status">>    := Status
+        } = GithubFile <- GithubFiles
+      , Filename == File
+      , Status /= <<"deleted">>
     ],
   case MatchingFiles of
     [] -> [];
@@ -203,7 +203,7 @@ messages_from_comment(Filename, 0, Text, File) ->
       path      => Filename,
       position  => 0,
       text      => Text
-     }
+      }
   ];
 messages_from_comment(Filename,
                       Line,
@@ -215,7 +215,7 @@ messages_from_comment(Filename,
           path      => Filename,
           position  => Position,
           text      => Text
-         }
+          }
       ];
     not_found ->
       _ = lager:info("Line ~p does not belong to file's diff.", [Line]),
