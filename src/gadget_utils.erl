@@ -96,7 +96,7 @@ clone_repo(RepoDir, Branch, GitUrl) ->
 
 %% @doc makes sure that a directory is deleted
 -spec ensure_dir_deleted(file:name_all()) -> string().
-ensure_dir_deleted(RepoDir) -> run_command(["rm -r ", RepoDir]).
+ensure_dir_deleted(RepoDir) -> run_command(["rm -rf ", RepoDir]).
 
 ensure_dir(RepoDir) ->
   case filelib:ensure_dir(RepoDir) of
@@ -115,9 +115,9 @@ run_command(Command) ->
     {0, Result} ->
       lager:info(HR),
       Result;
-    {ExitStatus, _Result} ->
+    {ExitStatus, Result} ->
       lager:info(HR),
-      throw({error, {exit_status, ExitStatus}})
+      throw({error, {status, ExitStatus, Result}})
   end.
 
 %% @doc generates a "unique" id based on os:timestamp/0
