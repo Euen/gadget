@@ -61,7 +61,9 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
   end.
 
 build_plt(RepoDir) ->
-  gadget_utils:run_command(["cd ", RepoDir, "; V=1000 make plt"]).
+  GadgetMk = filename:absname(filename:join(priv_dir(), "gadget.mk")),
+  Command = ["cd ", RepoDir, "; V=1000 make -f ", GadgetMk ," gadget-plt"],
+  gadget_utils:run_command(Command).
 
 dialyze_project(RepoDir) ->
   GadgetMk =
