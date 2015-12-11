@@ -14,7 +14,7 @@
 <p>
   When the <strong>Elvis</strong>'s webhook runs on your pull request it checks
   if there's an <strong>elvis.config</strong> file in your
-  <strong>master</strong> branch. If there is one then the configuration and the
+  <strong>pull request's</strong> branch. If there is one then the configuration and the
   rules defined in that file are used. In case there is none, the
   <a target="_blank" href="https://github.com/inaka/elvis/wiki/Default-Rules-in-Elvis-Webhook">default rules</a>
   are used.
