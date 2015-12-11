@@ -1,9 +1,9 @@
 #!/bin/bash
 
 cd /tmp
-wget http://erlang.org/download/otp_src_17.5.tar.gz
-tar -xvzf otp_src_17.5.tar.gz
-cd otp_src_17.5
+wget http://erlang.org/download/otp_src_18.1.tar.gz
+tar -xvzf otp_src_18.1.tar.gz
+cd otp_src_18.1
 ./configure
 make
 make install
