@@ -16,7 +16,6 @@ COPY     . /gadget
 RUN      mkdir -p /gadget/dump
 COPY     ssh/* /root/.ssh/
 
-
 RUN make
 COPY build/sys.config /gadget/config/app.config
 COPY build/run.sh /etc/sv/gadget/run
