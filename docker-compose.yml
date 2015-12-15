@@ -1,0 +1,8 @@
+web:
+  build: .
+  command: /usr/sbin/runsvdir-start
+  container_name: gadget-internal_web
+  ports:
+   - "8084:8084"
+  volumes:
+    - /data/gadget-internal:/gadget/db
