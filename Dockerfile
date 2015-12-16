@@ -14,7 +14,7 @@ RUN      mkdir /gadget
 WORKDIR  /gadget
 COPY     . /gadget
 RUN      mkdir -p /gadget/dump
-COPY     ssh/* .ssh/
+COPY     ssh/* /root/.ssh/
 
 
 RUN make
