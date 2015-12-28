@@ -41,6 +41,18 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
       gadget_utils:messages_from_comments("Compiler", Comments, GithubFiles),
     {ok, Messages}
   catch
+    _:{error, {status, ExitStatus, Output}} ->
+      Lines = output_to_lines(Output),
+      case is_compiler_error(Lines) of
+        false -> {error, {failed, ExitStatus}};
+        true ->
+          Comments1 = extract_errors(Lines),
+          Messages1 =
+            gadget_utils:messages_from_comments("Compiler",
+                                                Comments1,
+                                                GithubFiles),
+          {ok, Messages1}
+      end;
     _:Error ->
       lager:warning(
         "Couldn't process PR: ~p~nParams: ~p~nStack: ~p",
@@ -75,3 +87,16 @@ extract_errors([Line|Lines], Regex, Errors) ->
         Errors
     end,
   extract_errors(Lines, Regex, NewErrors).
+
+output_to_lines(Output) ->
+  DecodedOutput = unicode:characters_to_binary(Output),
+  try
+    re:split(DecodedOutput, "\n", [{return, binary}, trim])
+  catch
+    _:Error ->
+      lager:warning("Uncomprehensible output: ~p", [DecodedOutput]),
+      Error
+  end.
+
+is_compiler_error(Lines) ->
+  <<"make: *** [app] Error 2">> /= lists:last(Lines).
