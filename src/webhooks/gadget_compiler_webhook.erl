@@ -41,6 +41,18 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
       gadget_utils:messages_from_comments("Compiler", Comments, GithubFiles),
     {ok, Messages}
   catch
+    _:{error, {status, ExitStatus, Output}} ->
+      Lines = gadget_utils:output_to_lines(Output),
+      case error_source (Lines) of
+        unknown -> {error, {failed, ExitStatus}};
+        compiler ->
+          Comments1 = extract_errors(Lines),
+          Messages1 =
+            gadget_utils:messages_from_comments("Compiler",
+                                                Comments1,
+                                                GithubFiles),
+          report_compiler_error(Messages1, ExitStatus)
+      end;
     _:Error ->
       lager:warning(
         "Couldn't process PR: ~p~nParams: ~p~nStack: ~p",
@@ -75,3 +87,28 @@ extract_errors([Line|Lines], Regex, Errors) ->
         Errors
     end,
   extract_errors(Lines, Regex, NewErrors).
+
+error_source(Lines) ->
+  LastLines = lists:sublist(lists:reverse(Lines), 3),
+  Regexes = ["make[:] [*][*][*] [[][^]]*[]] Error",
+             "ERROR[:] compile failed",
+             "Compiling .* failed$"],
+  MatchesRegexes =
+    fun(Line) ->
+      lists:any(fun(Regex) -> nomatch /= re:run(Line, Regex) end, Regexes)
+    end,
+  case lists:any(MatchesRegexes, LastLines) of
+    true -> compiler;
+    false -> unknown
+  end.
+
+report_compiler_error([], ExitStatus) -> {error, {failed, ExitStatus}};
+report_compiler_error([#{commit_id := CommitId} | _] = Messages, ExitStatus) ->
+  ExtraMessage =
+    #{commit_id => CommitId,
+      path      => "",
+      position  => 0,
+      text      => <<"**Compiler** failed with exit status: ",
+                     (integer_to_binary(ExitStatus))/binary>>
+     },
+  {ok, [ExtraMessage | Messages]}.

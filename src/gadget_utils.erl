@@ -14,6 +14,7 @@
         , messages_from_comments/3
         , format_message/2
         , webhook_info/1
+        , output_to_lines/1
         ]).
 
 -type comment() :: #{file   => string(),
@@ -142,14 +143,7 @@ compile_project(RepoDir) ->
             throw(cant_compile)
         end
     end,
-  DecodedOutput = unicode:characters_to_binary(Output),
-  try
-    re:split(DecodedOutput, "\n", [{return, binary}, trim])
-  catch
-    _:Error ->
-      lager:warning("Uncomprehensible output: ~p", [DecodedOutput]),
-      Error
-  end.
+  output_to_lines(Output).
 
 make_project(RepoDir) -> run_command(["cd ", RepoDir, "; V=1000 make"]).
 
@@ -244,3 +238,13 @@ capitalize(<<>>) -> <<>>;
 capitalize(<<C, Rest/binary>>) ->
   [Upper] = string:to_upper([C]),
   [Upper | binary_to_list(Rest)].
+
+output_to_lines(Output) ->
+  DecodedOutput = unicode:characters_to_binary(Output),
+  try
+    re:split(DecodedOutput, "\n", [{return, binary}, trim])
+  catch
+    _:Error ->
+      lager:warning("Uncomprehensible output: ~p", [DecodedOutput]),
+      Error
+  end.
