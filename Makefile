@@ -26,6 +26,11 @@ dep_epocxy = git https://github.com/duomark/epocxy.git 1.0.0
 
 include erlang.mk
 
+all::rebar-script
+
+rebar-script:
+	cd deps/rebar/; $(gen_verbose) ./bootstrap; cd -
+
 DIALYZER_DIRS := ebin/
 DIALYZER_OPTS := --verbose --statistics -Wunmatched_returns
 
