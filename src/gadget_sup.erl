@@ -14,7 +14,7 @@ start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, noargs).
 
 %% @private
 -spec init(noargs) -> {ok, {supervisor:sup_flags(), [supervisor:child_spec()]}}.
-init({}) ->
+init(noargs) ->
   {ok,
     { {one_for_one, 5, 10}
     , [ { gadget_slave_sup
