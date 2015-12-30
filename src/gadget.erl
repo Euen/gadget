@@ -28,7 +28,11 @@ start_phase(cxy_ctl_setup, _StartType, []) ->
   end;
 start_phase(create_schema, _StartType, []) ->
   _ = application:stop(mnesia),
-  ok = mnesia:create_schema([node()]),
+  Node = node(),
+  case mnesia:create_schema([Node]) of
+    ok -> ok;
+    {error, {Node, {already_exists, Node}}} -> ok
+  end,
   {ok, _} = application:ensure_all_started(mnesia),
   sumo:create_schema();
 start_phase(start_cowboy_listeners, _StartType, []) ->
