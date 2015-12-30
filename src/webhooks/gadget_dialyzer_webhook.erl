@@ -39,7 +39,7 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
     case filelib:is_regular(filename:join(RepoDir, "erlang.mk")) of
       false -> {error, "Only erlang.mk based repos can be dialyzed"};
       true ->
-        gadget_utils:compile_project(RepoDir),
+        gadget_utils:compile_project(RepoDir, silent),
         build_plt(RepoDir),
         Comments = dialyze_project(RepoDir),
         Messages =
@@ -62,13 +62,17 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
 
 build_plt(RepoDir) ->
   GadgetMk = filename:absname(filename:join(priv_dir(), "gadget.mk")),
-  Command = ["cd ", RepoDir, "; V=1000 make -f ", GadgetMk, " gadget-plt"],
+  VerbOption = default_verbosity(),
+  Command =
+    ["cd ", RepoDir, "; ", VerbOption, "make -f ", GadgetMk, " gadget-plt"],
   gadget_utils:run_command(Command).
 
 dialyze_project(RepoDir) ->
   GadgetMk =
     filename:absname(filename:join(priv_dir(), "gadget.mk")),
-  Command = ["cd ", RepoDir, "; V=1000 make -f ", GadgetMk, " gadget-dialyze"],
+  VerbOption = default_verbosity(),
+  Command =
+    ["cd ", RepoDir, "; ", VerbOption, "make -f ", GadgetMk, " gadget-dialyze"],
   Output = gadget_utils:run_command(Command),
   ResultFile = filename:join(RepoDir, "gadget-dialyze.result"),
   case filelib:is_regular(ResultFile) of
@@ -98,4 +102,10 @@ priv_dir() ->
   case code:priv_dir(gadget) of
     {error, bad_name} -> "priv";
     Dir -> Dir
+  end.
+
+default_verbosity() ->
+  case application:get_env(gadget, default_verbosity, silent) of
+    verbose -> "V=2 ";
+    silent -> ""
   end.
