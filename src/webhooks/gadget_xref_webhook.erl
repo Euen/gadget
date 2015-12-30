@@ -36,7 +36,7 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
 process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
-    gadget_utils:compile_project(RepoDir),
+    gadget_utils:compile_project(RepoDir, silent),
     Comments = xref_project(RepoDir),
     {ok, gadget_utils:messages_from_comments("Xref", Comments, GithubFiles)}
   catch

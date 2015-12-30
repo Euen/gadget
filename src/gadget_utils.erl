@@ -10,7 +10,7 @@
         , ensure_dir_deleted/1
         , run_command/1
         , unique_id/0
-        , compile_project/1
+        , compile_project/2
         , messages_from_comments/3
         , format_message/2
         , webhook_info/1
@@ -128,14 +128,14 @@ unique_id() ->
   iolist_to_binary(io_lib:format("~7.10.0B-~7.10.0B-~7.10.0B", [X, Y, Z])).
 
 %% @doc runs make or rebar get-deps compile on a project
--spec compile_project(file:name_all()) -> [string()].
-compile_project(RepoDir) ->
+-spec compile_project(file:name_all(), verbose | silent) -> [string()].
+compile_project(RepoDir, Verbosity) ->
   Output =
     case filelib:is_regular(filename:join(RepoDir, "Makefile")) of
-      true -> make_project(RepoDir);
+      true -> make_project(RepoDir, Verbosity);
       false ->
         case filelib:is_regular(filename:join(RepoDir, "rebar.config")) of
-          true -> rebarize_project(RepoDir);
+          true -> rebarize_project(RepoDir, Verbosity);
           false ->
             lager:warning(
               "No Makefile nor rebar.config in ~p:\n\t~s",
@@ -145,15 +145,22 @@ compile_project(RepoDir) ->
     end,
   output_to_lines(Output).
 
-make_project(RepoDir) -> run_command(["cd ", RepoDir, "; V=1000 make"]).
+make_project(RepoDir, verbose) ->
+  run_command(["cd ", RepoDir, "; V=2 make"]);
+make_project(RepoDir, silent) -> run_command(["cd ", RepoDir, "; make"]).
 
-rebarize_project(RepoDir) ->
+rebarize_project(RepoDir, Verbosity) ->
   Rebar =
     case os:find_executable("rebar") of
       false -> filename:absname("deps/rebar/rebar");
       Exec -> Exec
     end,
-  run_command(["cd ", RepoDir, "; ", Rebar, " --verbose get-deps compile"]),
+  VerbOption =
+    case Verbosity of
+      verbose -> " --verbose";
+      silent -> ""
+    end,
+  run_command(["cd ", RepoDir, "; ", Rebar, VerbOption, " get-deps compile"]),
   run_command(["cd ", RepoDir, "; ", Rebar, " skip_deps=true clean compile"]).
 
 %% @doc generates egithub_webhook:messages from a list of comments

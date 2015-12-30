@@ -36,7 +36,7 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
 process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
-    Comments = extract_errors(gadget_utils:compile_project(RepoDir)),
+    Comments = extract_errors(gadget_utils:compile_project(RepoDir, verbose)),
     Messages =
       gadget_utils:messages_from_comments("Compiler", Comments, GithubFiles),
     {ok, Messages}
