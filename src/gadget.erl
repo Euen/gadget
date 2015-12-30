@@ -27,8 +27,8 @@ start_phase(cxy_ctl_setup, _StartType, []) ->
     {error, Error} -> {error, Error}
   end;
 start_phase(create_schema, _StartType, []) ->
-  application:stop(mnesia),
-  mnesia:create_schema([node()]),
+  _ = application:stop(mnesia),
+  ok = mnesia:create_schema([node()]),
   {ok, _} = application:ensure_all_started(mnesia),
   sumo:create_schema();
 start_phase(start_cowboy_listeners, _StartType, []) ->
@@ -68,8 +68,7 @@ start_phase(start_cowboy_listeners, _StartType, []) ->
 %% @private
 -spec stop(term()) -> ok.
 stop(_State) ->
-  cowboy:stop_listener(http_gadget),
-  ok.
+  cowboy:stop_listener(http_gadget).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% External functions
