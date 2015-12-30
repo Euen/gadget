@@ -205,10 +205,10 @@ messages_from_comment(Filename, 0, Text, File) ->
       text      => Text
      }
   ];
-messages_from_comment(Filename, Line, Text, File) ->
-  #{ <<"patch">>      := Patch
-   , <<"raw_url">>    := RawUrl
-   } = File,
+messages_from_comment(Filename,
+                      Line,
+                      Text,
+                      #{<<"patch">> := Patch, <<"raw_url">> := RawUrl}) ->
   case elvis_git:relative_position(Patch, Line) of
     {ok, Position} ->
       [ #{commit_id => commit_id_from_raw_url(RawUrl, Filename),
@@ -220,7 +220,9 @@ messages_from_comment(Filename, Line, Text, File) ->
     not_found ->
       _ = lager:info("Line ~p does not belong to file's diff.", [Line]),
       []
-  end.
+  end;
+messages_from_comment(Filename, _Line, Text, File) ->
+  messages_from_comment(Filename, 0, Text, File).
 
 %% @doc Gets a raw_url for a file and extracts the commit id from it.
 commit_id_from_raw_url(Url, Filename) ->
