@@ -7,7 +7,7 @@
 -export([repo_info/2]).
 
 %% @doc registers a repo for processing
--spec register(string(), atom(), string()) -> gadget_repos:repo().
+-spec register(string(), atom(), string()) -> boolean().
 register(Repo, Tool, Token) ->
   {ok, WebhookMap} = application:get_env(gadget, webhooks),
   case maps:get(Tool, WebhookMap, false) of
@@ -18,7 +18,7 @@ register(Repo, Tool, Token) ->
         Result =
           egithub:create_webhook(Cred, Repo, WebhookUrl, ["pull_request"]),
         {ok, _} = check_result(Result),
-        gadget_repos_repo:register(Repo, Tool, Token),
+        _ = gadget_repos_repo:register(Repo, Tool, Token),
         true
       catch
         _ -> false
@@ -65,7 +65,7 @@ repositories(Cred) ->
 
   lists:sort([repo_info(Cred, Repo) || Repo <- PublicRepos]).
 
--spec repo_info(egithub:credentials(), string()) -> [tuple()].
+-spec repo_info(egithub:credentials(), map()) -> [tuple()].
 repo_info(Cred, Repo) ->
   Name = maps:get(<<"name">>, Repo),
   FullName = maps:get(<<"full_name">>, Repo),

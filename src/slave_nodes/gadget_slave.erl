@@ -66,35 +66,35 @@ handle_call(Msg, _From, State) ->
 -spec handle_info({nodedown, atom()}, state()) ->
   {stop, nodedown, state()} | {noreply, state()}.
 handle_info({nodedown, SlaveNode, Info}, State = #{slave_node := SlaveNode}) ->
-  lager:error("Slave node ~p is down! (~p)", [SlaveNode, Info]),
+  _ = lager:error("Slave node ~p is down! (~p)", [SlaveNode, Info]),
   {stop, nodedown, State};
 handle_info({Port, {data, {eol, SlaveLog}}},
             State = #{slave_port := Port, wait_for_eol := false}) ->
   #{slave_node := SlaveNode} = State,
   HR = lists:duplicate(80, $~),
-  lager:debug("~n~s~n(~p)> ~s~n~s", [HR, SlaveNode, SlaveLog, HR]),
+  _ = lager:debug("~n~s~n(~p)> ~s~n~s", [HR, SlaveNode, SlaveLog, HR]),
   {noreply, State};
 handle_info({Port, {data, {eol, SlaveLog}}},
             State = #{slave_port := Port, wait_for_eol := true}) ->
   #{slave_node := SlaveNode} = State,
   HR = lists:duplicate(80, $~),
-  lager:debug("~n(~p)> ~s~n~s", [SlaveNode, SlaveLog, HR]),
+  _ = lager:debug("~n(~p)> ~s~n~s", [SlaveNode, SlaveLog, HR]),
   {noreply, State};
 handle_info({Port, {data, {noeol, SlaveLog}}}, State = #{slave_port := Port}) ->
   #{slave_node := SlaveNode} = State,
   HR = lists:duplicate(80, $~),
-  lager:debug("~n~s~n(~p)> ~s", [HR, SlaveNode, SlaveLog]),
+  _ = lager:debug("~n~s~n(~p)> ~s", [HR, SlaveNode, SlaveLog]),
   {noreply, State};
 handle_info(Info, State) ->
   #{slave_node := SlaveNode} = State,
   HR = lists:duplicate(80, $~),
-  lager:warning("~n~s~n(~p)> ~p", [HR, SlaveNode, Info]),
+  _ = lager:warning("~n~s~n(~p)> ~p", [HR, SlaveNode, Info]),
   {noreply, State}.
 
 %% @private
 -spec handle_cast(stop, state()) -> {stop, normal, state()}.
 handle_cast(stop, State) ->
-  lager:debug("Stopping ~p", [State]),
+  _ = lager:debug("Stopping ~p", [State]),
   {stop, normal, State}.
 
 %% @private
@@ -112,7 +112,7 @@ code_change(_OldVersion, State, _Extra) -> {ok, State}.
 wait_for_node(State = #{slave_node := SlaveNode}) ->
   receive
     {nodeup, SlaveNode, Info} ->
-      lager:debug("Node ~p is up! (~p)", [SlaveNode, Info]),
+      _ = lager:debug("Node ~p is up! (~p)", [SlaveNode, Info]),
       {ok, State};
     Info ->
       case handle_info(Info, State) of
@@ -122,6 +122,6 @@ wait_for_node(State = #{slave_node := SlaveNode}) ->
           {stop, Reason}
       end
   after 5000 ->
-    lager:debug("Node ~p never went up :(", [SlaveNode]),
+    _ = lager:debug("Node ~p never went up :(", [SlaveNode]),
     {stop, nodedown}
   end.

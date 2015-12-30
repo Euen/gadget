@@ -27,7 +27,7 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
       process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles)
   catch
     _:Error ->
-      lager:warning(
+      _ = lager:warning(
         "Couldn't clone project: ~p~nParams: ~p~nStack: ~p",
         [Error, [Cred, ReqData, GithubFiles], erlang:get_stacktrace()]),
       {error, Error}
@@ -54,7 +54,7 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
           report_compiler_error(Messages1, ExitStatus)
       end;
     _:Error ->
-      lager:warning(
+      _ = lager:warning(
         "Couldn't process PR: ~p~nParams: ~p~nStack: ~p",
         [ Error
         , [RepoDir, RepoName, Branch, GitUrl, GithubFiles]
@@ -82,7 +82,9 @@ extract_errors([Line|Lines], Regex, Errors) ->
           , number => binary_to_integer(Number)
           , text   => Comment
           } | Errors];
-      {match, Something} -> lager:error("WHAT? ~p", [Something]);
+      {match, Something} ->
+        _ = lager:error("WHAT? ~p", [Something]),
+        [];
       _ ->
         Errors
     end,

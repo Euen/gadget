@@ -10,10 +10,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% @private
 -spec start_link() -> supervisor:startlink_ret().
-start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, {}).
+start_link() -> supervisor:start_link({local, ?MODULE}, ?MODULE, noargs).
 
 %% @private
--spec init(term()) -> term().
+-spec init(noargs) -> {ok, {supervisor:sup_flags(), [supervisor:child_spec()]}}.
 init({}) ->
   {ok,
     { {one_for_one, 5, 10}
