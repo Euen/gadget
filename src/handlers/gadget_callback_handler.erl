@@ -7,6 +7,7 @@
         ]).
 
 -record(state, {}).
+-type state() :: #state{}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Handler Callbacks
@@ -18,7 +19,7 @@ init(_Type, Req, _Opts) ->
   {ok, Req, #state{}}.
 
 %% @private
--spec handle(cowboy_req:req(), #state{}) -> ok.
+-spec handle(cowboy_req:req(), state()) -> ok.
 handle(Req, State) ->
   Headers = [{<<"content-type">>, <<"text/plain">>}],
   case cowboy_req:qs_val(<<"code">>, Req) of
@@ -37,7 +38,6 @@ handle(Req, State) ->
           {ok, Req4} = cowboy_req:reply(302, RedirHeaders, Req3),
           {ok, Req4, State};
         {error, Reason} ->
-          lager:info("Error: ~p", [Reason]),
           Body = [<<"Error: ">>, io_lib:format("~p", [Reason])],
           {ok, Req3} = cowboy_req:reply(400, Headers, Body, Req2),
           {ok, Req3, State}
@@ -45,7 +45,7 @@ handle(Req, State) ->
   end.
 
 %% @private
--spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
+-spec terminate(term(), cowboy_req:req(), state()) -> ok.
 terminate(_Reason, _Req, _State) -> ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,7 +55,6 @@ terminate(_Reason, _Req, _State) -> ok.
 access_token(Code) ->
   {ok, ClientId} = application:get_env(gadget, github_client_id),
   {ok, ClientSecret} = application:get_env(gadget, github_client_secret),
-  lager:info("~p - ~p", [ClientId, ClientSecret]),
   Url = "/login/oauth/access_token",
   Headers = #{ "Content-Type" => "application/x-www-form-urlencoded"
              , "Accept" => "application/json"},
@@ -63,7 +62,6 @@ access_token(Code) ->
           "&client_id=", ClientId,
           "&client_secret=", ClientSecret],
   {ok, Pid} = shotgun:open("github.com", 443, https),
-  % lager:warning("status ~p response ~p", [S, R]),
   Response =
     case shotgun:post(Pid, Url, Headers, Body, #{}) of
       {ok, #{status_code := 200, body := RespBody}} ->
@@ -73,14 +71,11 @@ access_token(Code) ->
             Token = maps:get(<<"access_token">>, JsonBody),
             {ok, Token};
           false ->
-            lager:warning("false"),
             {error, RespBody}
         end;
       {ok, #{status_code := Status}} ->
-        lager:warning("ok status-code ~p", [Status]),
         {error, Status};
       {error, Reason} ->
-        lager:warning("error reason ~p", [Reason]),
         {error, Reason}
     end,
   shotgun:close(Pid),

@@ -109,15 +109,15 @@ ensure_dir(RepoDir) ->
 -spec run_command(iodata()) -> string().
 run_command(Command) ->
   HR = lists:duplicate(80, $~),
-  lager:info(HR),
-  lager:info("$ ~s", [Command]),
-  Opts =  #{log_fun => fun(X) -> lager:info("~s", [X]) end},
+  _ = lager:info(HR),
+  _ = lager:info("$ ~s", [Command]),
+  Opts =  #{log_fun => fun(X) -> _ = lager:info("~s", [X]) end},
   case ktn_os:command(Command, Opts) of
     {0, Result} ->
-      lager:info(HR),
+      _ = lager:info(HR),
       Result;
     {ExitStatus, Result} ->
-      lager:info(HR),
+      _ = lager:info(HR),
       throw({error, {status, ExitStatus, Result}})
   end.
 
@@ -137,7 +137,7 @@ compile_project(RepoDir, Verbosity) ->
         case filelib:is_regular(filename:join(RepoDir, "rebar.config")) of
           true -> rebarize_project(RepoDir, Verbosity);
           false ->
-            lager:warning(
+            _ = lager:warning(
               "No Makefile nor rebar.config in ~p:\n\t~s",
               [RepoDir, filelib:wildcard(filename:join(RepoDir, "*"))]),
             throw(cant_compile)
@@ -218,7 +218,7 @@ messages_from_comment(Filename,
          }
       ];
     not_found ->
-      lager:info("Line ~p does not belong to file's diff.", [Line]),
+      _ = lager:info("Line ~p does not belong to file's diff.", [Line]),
       []
   end;
 messages_from_comment(Filename, _Line, Text, File) ->
@@ -254,6 +254,6 @@ output_to_lines(Output) ->
     re:split(DecodedOutput, "\n", [{return, binary}, trim])
   catch
     _:Error ->
-      lager:warning("Uncomprehensible output: ~p", [DecodedOutput]),
+      _ = lager:warning("Uncomprehensible output: ~p", [DecodedOutput]),
       Error
   end.

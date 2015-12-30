@@ -3,13 +3,14 @@ PROJECT = gadget
 CONFIG ?= config/app.config
 ERLDOCS ?= ./erldocs
 
-DEPS = elvis cowboy lager erlydtl egithub shotgun eper xref_runner katana sumo_db epocxy
+DEPS = elvis cowboy lager erlydtl egithub shotgun eper xref_runner katana sumo_db epocxy jiffy
 # rebar has to be the last dep on the list, in order to avoid conflicts when compiling
 # rebar-ized dependencies
 DEPS += rebar
 SHELL_DEPS = sync
-LOCAL_DEPS = tools compiler syntax_tools common_test inets test_server dialyzer wx
+LOCAL_DEPS = tools compiler syntax_tools common_test inets test_server dialyzer wx mnesia
 
+dep_jiffy = git https://github.com/davisp/jiffy.git 0.14.3
 dep_sync = git https://github.com/rustyio/sync.git 9c78e7b
 dep_eper = git https://github.com/massemanet/eper.git 0.96.4
 dep_egithub = git https://github.com/inaka/erlang-github.git e95649c
@@ -29,7 +30,7 @@ include erlang.mk
 all::rebar-script
 
 rebar-script:
-	cd deps/rebar/; $(gen_verbose) ./bootstrap; cd -
+	cd deps/rebar/; $(gen_verbose) ./bootstrap debug; cd -
 
 DIALYZER_DIRS := ebin/
 DIALYZER_OPTS := --verbose --statistics -Wunmatched_returns
