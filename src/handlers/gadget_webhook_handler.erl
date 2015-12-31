@@ -26,7 +26,21 @@ handle(Req, State) ->
   {ok, Body, Req3} = cowboy_req:body(Req2),
   RequestMap = #{headers => HeadersMap,
                  body => Body},
+  % Run checks just for these pull request's actions
+  Actions = [<<"opened">>, <<"reopened">>, <<"synchronize">>],
+  BodyJson = jiffy:decode(Body, [return_maps]),
+  Action = maps:get(<<"action">>, BodyJson, <<"">>),
+  case lists:member(Action, Actions) of
+    true -> process_request(ToolName, RequestMap, Req3, State);
+    false -> {ok, Req3, State}
+  end.
 
+%% @private
+-spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
+terminate(_Reason, _Req, _State) -> ok.
+
+%% internal
+process_request(ToolName, RequestMap, Req3, State) ->
   case gadget:webhook(ToolName, RequestMap) of
     {error, Reason} ->
       Status = 400,
@@ -42,7 +56,3 @@ handle(Req, State) ->
       {ok, Req4} = cowboy_req:reply(Status, RespHeaders, RespBody, Req3),
       {ok, Req4, State}
   end.
-
-%% @private
--spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
-terminate(_Reason, _Req, _State) -> ok.
