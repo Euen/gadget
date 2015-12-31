@@ -29,7 +29,8 @@ handle(Req, State) ->
   RequestMap = #{headers => HeadersMap,
                  body => Body},
   % Run checks just for these pull request's actions
-  Actions = application:get_env(gadget, pr_actions, []),
+  DefaultPRActions = [<<"opened">>, <<"reopened">>, <<"synchronize">>],
+  Actions = application:get_env(gadget, pr_actions, DefaultPRActions),
   BodyJson = jiffy:decode(Body, [return_maps]),
   Action = maps:get(<<"action">>, BodyJson, <<"">>),
   case lists:member(Action, Actions) of

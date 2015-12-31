@@ -44,6 +44,7 @@
         dialyzer  => "http://gadget.inakalabs.com/webhook/dialyzer"
        }
     },
+    {pr_actions, [<<"opened">>, <<"reopened">>, <<"synchronize">>]},
     %% Basic Auth
     {github_user, "github-user"},
     {github_password, "github-password"}
