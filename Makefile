@@ -6,7 +6,8 @@ ERLDOCS ?= ./erldocs
 DEPS = elvis cowboy lager erlydtl egithub shotgun eper xref_runner katana sumo_db epocxy jiffy
 # rebar has to be the last dep on the list, in order to avoid conflicts when compiling
 # rebar-ized dependencies
-DEPS += rebar
+DEPS += rebar katana
+TEST_DEPS = mixer
 SHELL_DEPS = sync
 LOCAL_DEPS = tools compiler syntax_tools common_test inets test_server dialyzer wx mnesia
 
@@ -24,6 +25,7 @@ dep_xref_runner = git https://github.com/inaka/xref_runner.git 5e855dc
 dep_katana =  git https://github.com/inaka/erlang-katana.git 07efe94
 dep_sumo_db = git https://github.com/inaka/sumo_db.git db463a6b93
 dep_epocxy = git https://github.com/duomark/epocxy.git 1.0.0
+dep_katana = git https://github.com/inaka/erlang-katana.git 0.2.17
 
 include erlang.mk
 
