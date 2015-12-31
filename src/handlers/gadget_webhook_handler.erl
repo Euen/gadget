@@ -8,6 +8,8 @@
 
 -record(state, {}).
 
+-type state() :: #state{}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Handler Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -18,7 +20,7 @@ init(_Type, Req, _Opts) ->
   {ok, Req, #state{}}.
 
 %% @private
--spec handle(cowboy_req:req(), #state{}) -> ok.
+-spec handle(cowboy_req:req(), state()) -> ok.
 handle(Req, State) ->
   {ToolName, Req1} = cowboy_req:binding(tool, Req),
   {Headers, Req2} = cowboy_req:headers(Req1),
@@ -36,10 +38,11 @@ handle(Req, State) ->
   end.
 
 %% @private
--spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
+-spec terminate(term(), cowboy_req:req(), state()) -> ok.
 terminate(_Reason, _Req, _State) -> ok.
 
 %% internal
+-spec process_request(binary(), map(), cowboy_req:req(), state()) -> ok.
 process_request(ToolName, RequestMap, Req3, State) ->
   case gadget:webhook(ToolName, RequestMap) of
     {error, Reason} ->
