@@ -8,18 +8,20 @@
 
 -record(state, {dtl :: atom()}).
 
+-type state() :: #state{}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Handler Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% @private
 -spec init({atom(), atom()}, cowboy_req:req(), term()) ->
-  {ok, Req, State} | {shutdown, Req, State}.
+  {ok | shutdown, cowboy_req:req(), state()}.
 init(_Type, Req, [Module]) ->
   {ok, Req, #state{dtl = Module}}.
 
 %% @private
--spec handle(cowboy_req:req(), #state{}) -> ok.
+-spec handle(cowboy_req:req(), state()) -> {ok, cowboy_req:req(), state()}.
 handle(Req, State = #state{dtl = Module}) ->
   Headers = [{<<"content-type">>, <<"text/html">>}],
   {ok, Body} = Module:render([]),
@@ -27,5 +29,5 @@ handle(Req, State = #state{dtl = Module}) ->
   {ok, Req2, State}.
 
 %% @private
--spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
+-spec terminate(term(), cowboy_req:req(), state()) -> ok.
 terminate(_Reason, _Req, _State) -> ok.

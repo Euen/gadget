@@ -11,12 +11,14 @@
 
 -record(state, {}).
 
+-type state() :: #state{}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Handler Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% @private
 -spec init({atom(), atom()}, cowboy_req:req(), term()) ->
-  {ok, Req, State} | {shutdown, Req, State}.
+  {upgrade, protocol, cowboy_rest}.
 init(_Transport, _Req, _Opts) ->
   {upgrade, protocol, cowboy_rest}.
 
@@ -27,19 +29,20 @@ rest_init(Req, _Opts) ->
   {ok, Req, #state{}}.
 
 %% @private
--spec allowed_methods(cowboy_req:req(), term()) ->
-  {[], cowboy_req:req(), term()}.
+-spec allowed_methods(cowboy_req:req(), state()) ->
+  {[binary()], cowboy_req:req(), state()}.
 allowed_methods(Req, State) ->
   {[<<"POST">>, <<"OPTIONS">>], Req, State}.
 
 %% @private
--spec content_types_accepted(cowboy_req:req(), term()) ->
-  {[], cowboy_req:req(), #state{}}.
+-spec content_types_accepted(cowboy_req:req(), state()) ->
+  {[{{binary(), binary(), atom()}, atom()}], cowboy_req:req(), state()}.
 content_types_accepted(Req, State) ->
   {[{{<<"application">>, <<"json">>, '*'}, handle_post}], Req, State}.
 
 %% @private
--spec handle_post(cowboy_req:req(), #state{}) -> ok.
+-spec handle_post(cowboy_req:req(), state()) ->
+  {true | false, cowboy_req:req(), state()}.
 handle_post(Req, State) ->
   {ok, Body, Req1} = cowboy_req:body(Req),
   Decoded = jiffy:decode(Body, [return_maps]),
@@ -50,5 +53,5 @@ handle_post(Req, State) ->
   {Result, Req1, State}.
 
 %% @private
--spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
+-spec terminate(term(), cowboy_req:req(), state()) -> ok.
 terminate(_Reason, _Req, _State) -> ok.

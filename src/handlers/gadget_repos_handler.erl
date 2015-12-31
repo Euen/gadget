@@ -8,6 +8,8 @@
 
 -record(state, {}).
 
+-type state() :: #state{}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Handler Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -18,7 +20,7 @@ init(_Type, Req, _Opts) ->
   {ok, Req, #state{}}.
 
 %% @private
--spec handle(cowboy_req:req(), #state{}) -> ok.
+-spec handle(cowboy_req:req(), state()) -> {ok, cowboy_req:req(), state()}.
 handle(Req, State) ->
   case get_user(Req) of
     {ok, User, Cred} ->
@@ -62,5 +64,5 @@ get_user(Req) ->
   end.
 
 %% @private
--spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
+-spec terminate(term(), cowboy_req:req(), state()) -> ok.
 terminate(_Reason, _Req, _State) -> ok.

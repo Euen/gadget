@@ -39,14 +39,14 @@ all() ->
 
 -spec init_per_suite(config()) -> config().
 init_per_suite(Config) ->
-  application:stop(mnesia),
-  mnesia:create_schema([node()]),
+  _ = application:stop(mnesia),
+  _ = mnesia:create_schema([node()]),
   {ok, _} = application:ensure_all_started(mnesia),
-  application:ensure_all_started(mnesia),
-  application:ensure_all_started(cowboy),
-  application:ensure_all_started(sumo_db),
-  application:ensure_all_started(lager),
-  application:ensure_all_started(gadget),
+  {ok, _} = application:ensure_all_started(mnesia),
+  {ok, _} = application:ensure_all_started(cowboy),
+  {ok, _} = application:ensure_all_started(sumo_db),
+  {ok, _} = application:ensure_all_started(lager),
+  {ok, _} = application:ensure_all_started(gadget),
   sumo:create_schema(),
   Config.
 

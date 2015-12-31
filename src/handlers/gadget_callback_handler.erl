@@ -7,6 +7,7 @@
         ]).
 
 -record(state, {}).
+
 -type state() :: #state{}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -14,12 +15,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% @private
 -spec init({atom(), atom()}, cowboy_req:req(), term()) ->
-  {ok, Req, State} | {shutdown, Req, State}.
+  {ok | shutdown, cowboy_req:req(), state()}.
 init(_Type, Req, _Opts) ->
   {ok, Req, #state{}}.
 
 %% @private
--spec handle(cowboy_req:req(), state()) -> ok.
+-spec handle(cowboy_req:req(), state()) -> {ok, cowboy_req:req(), state()}.
 handle(Req, State) ->
   Headers = [{<<"content-type">>, <<"text/plain">>}],
   case cowboy_req:qs_val(<<"code">>, Req) of
@@ -31,7 +32,7 @@ handle(Req, State) ->
       case access_token(Code) of
         {ok, Token} ->
           Url = "/repos",
-          RedirHeaders = [{"Location", Url}],
+          RedirHeaders = [{<<"Location">>, Url}],
           Req3 =
             cowboy_req:set_resp_cookie(
               <<"token">>, Token, [{path, <<"/">>}], Req2),
