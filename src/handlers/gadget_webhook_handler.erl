@@ -8,6 +8,8 @@
 
 -record(state, {}).
 
+-type state() :: #state{}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Handler Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -18,7 +20,7 @@ init(_Type, Req, _Opts) ->
   {ok, Req, #state{}}.
 
 %% @private
--spec handle(cowboy_req:req(), #state{}) -> ok.
+-spec handle(cowboy_req:req(), state()) -> {ok, cowboy_req:req(), state()}.
 handle(Req, State) ->
   {ToolName, Req1} = cowboy_req:binding(tool, Req),
   {Headers, Req2} = cowboy_req:headers(Req1),
@@ -26,7 +28,24 @@ handle(Req, State) ->
   {ok, Body, Req3} = cowboy_req:body(Req2),
   RequestMap = #{headers => HeadersMap,
                  body => Body},
+  % Run checks just for these pull request's actions
+  DefaultPRActions = [<<"opened">>, <<"reopened">>, <<"synchronize">>],
+  Actions = application:get_env(gadget, pr_actions, DefaultPRActions),
+  BodyJson = jiffy:decode(Body, [return_maps]),
+  Action = maps:get(<<"action">>, BodyJson, <<"">>),
+  case lists:member(Action, Actions) of
+    true -> process_request(ToolName, RequestMap, Req3, State);
+    false -> {ok, Req3, State}
+  end.
 
+%% @private
+-spec terminate(term(), cowboy_req:req(), state()) -> ok.
+terminate(_Reason, _Req, _State) -> ok.
+
+%% internal
+-spec process_request(binary(), map(), cowboy_req:req(), state()) ->
+  {ok, cowboy_req:req(), state()}.
+process_request(ToolName, RequestMap, Req3, State) ->
   case gadget:webhook(ToolName, RequestMap) of
     {error, Reason} ->
       Status = 400,
@@ -42,7 +61,3 @@ handle(Req, State) ->
       {ok, Req4} = cowboy_req:reply(Status, RespHeaders, RespBody, Req3),
       {ok, Req4, State}
   end.
-
-%% @private
--spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
-terminate(_Reason, _Req, _State) -> ok.
