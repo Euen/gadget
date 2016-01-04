@@ -3,10 +3,10 @@ PROJECT = gadget
 CONFIG ?= config/app.config
 ERLDOCS ?= ./erldocs
 
-DEPS = elvis cowboy lager erlydtl egithub shotgun eper xref_runner katana sumo_db epocxy jiffy
+DEPS = katana elvis cowboy lager erlydtl egithub shotgun eper xref_runner sumo_db epocxy jiffy
 # rebar has to be the last dep on the list, in order to avoid conflicts when compiling
 # rebar-ized dependencies
-DEPS += rebar katana
+DEPS += rebar
 TEST_DEPS = mixer
 SHELL_DEPS = sync
 LOCAL_DEPS = tools compiler syntax_tools common_test inets test_server dialyzer wx mnesia
@@ -22,7 +22,6 @@ dep_erlydtl = git https://github.com/erlydtl/erlydtl.git 0.11.1
 dep_shotgun = git https://github.com/inaka/shotgun.git 13b6b44
 dep_rebar = git https://github.com/rebar/rebar.git 2.6.1
 dep_xref_runner = git https://github.com/inaka/xref_runner.git 5e855dc
-dep_katana =  git https://github.com/inaka/erlang-katana.git 07efe94
 dep_sumo_db = git https://github.com/inaka/sumo_db.git db463a6b93
 dep_epocxy = git https://github.com/duomark/epocxy.git 1.0.0
 dep_katana = git https://github.com/inaka/erlang-katana.git 0.2.17
