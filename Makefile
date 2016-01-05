@@ -11,10 +11,10 @@ TEST_DEPS = mixer
 SHELL_DEPS = sync
 LOCAL_DEPS = tools compiler syntax_tools common_test inets test_server dialyzer wx mnesia
 
-dep_jiffy = git https://github.com/davisp/jiffy.git 0.14.3
+dep_jiffy = git https://github.com/davisp/jiffy.git 0.14.5
 dep_sync = git https://github.com/rustyio/sync.git 9c78e7b
 dep_eper = git https://github.com/massemanet/eper.git 0.96.4
-dep_egithub = git https://github.com/inaka/erlang-github.git 0.1.18
+dep_egithub = git https://github.com/inaka/erlang-github.git 0.1.19
 dep_elvis = git https://github.com/inaka/elvis.git a9de18b
 dep_cowboy = git https://github.com/ninenines/cowboy.git 1.0.4
 dep_lager = git https://github.com/basho/lager.git 3.0.2
