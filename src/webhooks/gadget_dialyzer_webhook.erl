@@ -94,7 +94,7 @@ generate_comment(RepoDir, Warning = {_, {Filename, Line}, _}) ->
    }.
 
 generate_comment_text(Warning) ->
-  FromDialyzer = dialyzer:format_warning(Warning),
+  FromDialyzer = dialyzer:format_warning(Warning, basename),
   [_File, _Line | MessageParts] = string:tokens(FromDialyzer, [$:]),
   string:join(MessageParts, ":").
 

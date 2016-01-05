@@ -10,7 +10,7 @@
 api_call(Method, Url, Headers) ->
   api_call(Method, Url, Headers, "").
 
--spec api_call(atom(), string(), map(), map() | string()) -> {atom(), map()}.
+-spec api_call(atom(), string(), map(), map() | iodata()) -> {atom(), map()}.
 api_call(Method, Url, Headers, Body) ->
   {ok, Port} = application:get_env(cowboy, http_port),
   {ok, HttpHost} = application:get_env(cowboy, http_host),
@@ -19,7 +19,7 @@ api_call(Method, Url, Headers, Body) ->
   shotgun:close(Pid),
   Response.
 
--spec api_call(atom(), string(), map(), map() | string(), map()) ->
+-spec api_call(atom(), string(), map(), map() | iodata(), map()) ->
   {atom(), map()}.
 api_call(Method, Url, Headers, Body, Option) ->
   {ok, Port} = application:get_env(cowboy, http_port),
@@ -30,6 +30,6 @@ api_call(Method, Url, Headers, Body, Option) ->
   Response.
 
 
--spec get_github_client_secret() -> egithub:credentials().
+-spec get_github_client_secret() -> string().
 get_github_client_secret() ->
-  application:get_env(github_client_secret, github_user, "").
+  application:get_env(gadget, github_client_secret, "").

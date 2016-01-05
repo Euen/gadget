@@ -42,7 +42,6 @@ init_per_suite(Config) ->
   _ = application:stop(mnesia),
   _ = mnesia:create_schema([node()]),
   {ok, _} = application:ensure_all_started(mnesia),
-  {ok, _} = application:ensure_all_started(mnesia),
   {ok, _} = application:ensure_all_started(cowboy),
   {ok, _} = application:ensure_all_started(sumo_db),
   {ok, _} = application:ensure_all_started(lager),
@@ -112,7 +111,7 @@ basic_test(Webhook, Config) ->
     #{  <<"Content-Type">> => <<"application/json">>
       , <<"x-github-event">> =>  <<"ping">>},
   Token = gadget_test_utils:get_github_client_secret(),
-  gadget_repos_repo:register("gadget-tester/user-repo", Webhook, Token),
+  _ = gadget_repos_repo:register("gadget-tester/user-repo", Webhook, Token),
   {ok, JsonBody} =
     file:read_file("../../priv/initial-payload.json"),
   {ok, Response} =

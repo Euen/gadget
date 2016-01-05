@@ -5,6 +5,10 @@
 
 -export([handle_pull_request/3]).
 
+%% @todo: remove when issue #303 on elvis is fixed
+-dialyzer([{no_return, [handle_pull_request/3]}]).
+-dialyzer([{no_unused, [format_messages/1]}]).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Callbacks
 %% @private
