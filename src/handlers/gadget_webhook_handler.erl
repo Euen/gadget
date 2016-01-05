@@ -35,7 +35,7 @@ handle(Req, State) ->
   Action = maps:get(<<"action">>, BodyJson, <<"">>),
   case lists:member(Action, Actions) of
     true -> process_request(ToolName, RequestMap, Req3, State);
-    false -> {ok, Req3, State}
+    false -> return(200, <<"Event ignored.">>, Req3, State)
   end.
 
 %% @private
@@ -48,16 +48,14 @@ terminate(_Reason, _Req, _State) -> ok.
 process_request(ToolName, RequestMap, Req3, State) ->
   case gadget:webhook(ToolName, RequestMap) of
     {error, Reason} ->
-      Status = 400,
-      RespHeaders = [{<<"content-type">>, <<"text/plain">>}],
       RespBody = [<<"There was an error while processing the event: ">>,
                   io_lib:format("~p", [Reason])],
-      {ok, Req4} = cowboy_req:reply(Status, RespHeaders, RespBody, Req3),
-      {ok, Req4, State};
+      return(400, RespBody, Req3, State);
     _Result ->
-      Status = 200,
-      RespHeaders = [{<<"content-type">>, <<"text/plain">>}],
-      RespBody = <<"Event processed.">>,
-      {ok, Req4} = cowboy_req:reply(Status, RespHeaders, RespBody, Req3),
-      {ok, Req4, State}
+      return(200, <<"Event processed.">>, Req3, State)
   end.
+
+return(Status, RespBody, Req, State) ->
+  RespHeaders = [{<<"content-type">>, <<"text/plain">>}],
+  {ok, Req1} = cowboy_req:reply(Status, RespHeaders, RespBody, Req),
+  {ok, Req1, State}.

@@ -33,7 +33,7 @@
 -export_type([webhook_info/0, comment/0, tool_info/0]).
 
 %% @doc Retrieves the list of active webhook tools
--spec active_tools([map()]) -> [atom()].
+-spec active_tools([map()]) -> [tool_info()].
 active_tools(Hooks) ->
   Tools = application:get_env(gadget, webhooks, #{}),
   [tool_info(ToolName, Tools, Hooks) || ToolName <- maps:keys(Tools)].
@@ -82,7 +82,7 @@ ensure_repo_dir(RepoName) ->
   TmpRoot = application:get_env(gadget, tmp_path, "/tmp/gadget"),
   Now = unique_id(),
   RepoDir = binary_to_list(filename:join([TmpRoot, RepoName, Now])),
-  ensure_dir_deleted(RepoDir),
+  _ = ensure_dir_deleted(RepoDir),
   ensure_dir(RepoDir),
   RepoDir.
 
@@ -92,7 +92,7 @@ clone_repo(RepoDir, Branch, GitUrl) ->
   Command =
     io_lib:format(
       "git clone -v -b ~s ~s ~s", [Branch, GitUrl, RepoDir]),
-  run_command(Command),
+  _ = run_command(Command),
   ok.
 
 %% @doc makes sure that a directory is deleted
@@ -160,8 +160,10 @@ rebarize_project(RepoDir, Verbosity) ->
       verbose -> " --verbose";
       silent -> ""
     end,
-  run_command(["cd ", RepoDir, "; ", Rebar, VerbOption, " get-deps compile"]),
-  run_command(["cd ", RepoDir, "; ", Rebar, " skip_deps=true clean compile"]).
+  _ =
+    run_command(["cd ", RepoDir, "; ", Rebar, VerbOption, " get-deps compile"]),
+  _ =
+    run_command(["cd ", RepoDir, "; ", Rebar, " skip_deps=true clean compile"]).
 
 %% @doc generates egithub_webhook:messages from a list of comments
 -spec messages_from_comments(string(), [comment()], [egithub_webhook:file()]) ->

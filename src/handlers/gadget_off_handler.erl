@@ -10,6 +10,8 @@
 
 -record(state, {}).
 
+-type state() :: #state{}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Handler Callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -21,18 +23,19 @@ init(_Transport, _Req, _Opts) ->
 
 %% @private
 -spec rest_init(cowboy_req:req(), term()) ->
-  {ok, cowboy_req:req(), #state{}}.
+  {ok, cowboy_req:req(), state()}.
 rest_init(Req, _Opts) ->
   {ok, Req, #state{}}.
 
 %% @private
--spec allowed_methods(cowboy_req:req(), term()) ->
-  {[_], cowboy_req:req(), term()}.
+-spec allowed_methods(cowboy_req:req(), state()) ->
+  {[binary()], cowboy_req:req(), state()}.
 allowed_methods(Req, State) ->
   {[<<"DELETE">>, <<"OPTIONS">>], Req, State}.
 
 %% @private
--spec delete_resource(cowboy_req:req(), #state{}) -> ok.
+-spec delete_resource(cowboy_req:req(), state()) ->
+  {true, cowboy_req:req(), state()}.
 delete_resource(Req, State) ->
   {ToolNameBin, _} =  cowboy_req:binding(tool, Req),
   {Token, _} = cowboy_req:cookie(<<"token">>, Req, ""),
@@ -42,5 +45,5 @@ delete_resource(Req, State) ->
   {true, Req, State}.
 
 %% @private
--spec terminate(term(), cowboy_req:req(), #state{}) -> ok.
+-spec terminate(term(), cowboy_req:req(), state()) -> ok.
 terminate(_Reason, _Req, _State) -> ok.

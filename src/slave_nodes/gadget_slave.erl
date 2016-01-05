@@ -47,7 +47,7 @@ init(NodeName) ->
       , stderr_to_stdout
       , {args,
         [ "-name" , SlaveNode
-        , "-setcookie", erlang:get_cookie()
+        , "-setcookie", atom_to_list(erlang:get_cookie())
         , "-noshell"
         , "-boot", "start_clean"
         , "-eval", Ping
