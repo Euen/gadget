@@ -39,8 +39,8 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
     case filelib:is_regular(filename:join(RepoDir, "erlang.mk")) of
       false -> {error, "Only erlang.mk based repos can be dialyzed"};
       true ->
-        gadget_utils:compile_project(RepoDir, silent),
-        build_plt(RepoDir),
+        _ = gadget_utils:compile_project(RepoDir, silent),
+        _ = build_plt(RepoDir),
         Comments = dialyze_project(RepoDir),
         Messages =
           gadget_utils:messages_from_comments(
@@ -94,7 +94,7 @@ generate_comment(RepoDir, Warning = {_, {Filename, Line}, _}) ->
    }.
 
 generate_comment_text(Warning) ->
-  FromDialyzer = dialyzer:format_warning(Warning),
+  FromDialyzer = dialyzer:format_warning(Warning, basename),
   [_File, _Line | MessageParts] = string:tokens(FromDialyzer, [$:]),
   string:join(MessageParts, ":").
 
