@@ -13,6 +13,7 @@
 -export([test_compiler/1]).
 -export([test_xref/1]).
 -export([test_dialyzer/1]).
+-export([valid_organization_test/1, invalid_organization_test/1]).
 
 -type config() :: [{atom(), term()}].
 
@@ -65,10 +66,9 @@ end_per_testcase(_Function, Config) ->
 
 -spec test_status(config()) -> config().
 test_status(Config) ->
-
   Header = #{<<"Content-Type">> => <<"text/plain; charset=utf-8">>},
   {ok, Response} =
-  gadget_test_utils:api_call(get, "/status", Header),
+    gadget_test_utils:api_call(get, "/status", Header),
   #{status_code := 200, body := <<"Server is Up">>} = Response,
   Config.
 
@@ -76,7 +76,7 @@ test_status(Config) ->
 test_about(Config) ->
   Header = #{<<"Content-Type">> => <<"text/plain; charset=utf-8">>},
   {ok, Response} =
-  gadget_test_utils:api_call(get, "/about", Header),
+    gadget_test_utils:api_call(get, "/about", Header),
   #{status_code := 200} = Response,
   Config.
 
@@ -84,7 +84,7 @@ test_about(Config) ->
 test_login(Config) ->
   Header = #{<<"Content-Type">> => <<"text/plain; charset=utf-8">>},
   {ok, Response} =
-  gadget_test_utils:api_call(get, "/login", Header),
+    gadget_test_utils:api_call(get, "/login", Header),
   #{status_code := 302} = Response,
   Config.
 
@@ -104,7 +104,6 @@ test_xref(Config) ->
 test_compiler(Config) ->
   basic_test(compiler, Config).
 
-
 -spec basic_test(atom(), config()) -> config().
 basic_test(Webhook, Config) ->
   Header =
@@ -116,5 +115,35 @@ basic_test(Webhook, Config) ->
     file:read_file("../../priv/initial-payload.json"),
   {ok, Response} =
     gadget_test_utils:api_call(get, "/webhook/compiler/", Header, JsonBody),
+  % Given payload does not have an action key because it is the initial payload
+  % sent by GitHub after you register a webhook, so it is ignored by gadget.
+  #{ status_code := 200, body := <<"Event ignored.">>} = Response,
+  Config.
+
+-spec valid_organization_test(Config::config()) -> config().
+valid_organization_test(Config) ->
+  Header =
+    #{  <<"Content-Type">> => <<"application/json">>
+      , <<"x-github-event">> =>  <<"pull_request">>},
+  {ok, JsonBody} =
+    file:read_file("../../priv/valid_organization_payload.json"),
+  {ok, Response} =
+    gadget_test_utils:api_call(get,
+                               "/webhook/compiler/",
+                               Header,
+                               JsonBody,
+                               #{timeout => 15000}),
   #{ status_code := 200, body := <<"Event processed.">>} = Response,
+  Config.
+
+-spec invalid_organization_test(Config::config()) -> config().
+invalid_organization_test(Config) ->
+  Header =
+    #{  <<"Content-Type">> => <<"application/json">>
+      , <<"x-github-event">> =>  <<"pull_request">>},
+  {ok, JsonBody} =
+    file:read_file("../../priv/invalid_organization_payload.json"),
+  {ok, Response} =
+    gadget_test_utils:api_call(get, "/webhook/compiler/", Header, JsonBody),
+  #{ status_code := 403, body := <<"Event not  processed.">>} = Response,
   Config.
