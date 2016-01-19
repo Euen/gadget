@@ -49,18 +49,24 @@ unregister(Repo, Tool, Token) ->
 -spec repositories(egithub:credentials()) -> list().
 repositories(Cred) ->
   Opts = #{type => <<"owner">>},
-  {ok, Repos} = egithub:all_repos(Cred, Opts),
-  {ok, Orgs} = egithub:orgs(Cred),
-
+  {ok, UserOrgsList} = egithub:orgs(Cred),
+  UserOrgs = lists:map(fun(#{<<"login">> := OrgName}) -> OrgName end,
+                       UserOrgsList),
+  ValidOrgs = application:get_env(gadget, valid_organizations, []),
+  % Only show repos for valid organizations
+  Orgs = lists:filter(
+    fun(Org) -> lists:member(Org, ValidOrgs) end,
+    UserOrgs
+  ),
   OrgReposFun =
-    fun(#{<<"login">> := OrgName}) ->
+    fun(OrgName) ->
       {ok, OrgRepos} = egithub:all_org_repos(Cred, OrgName, Opts),
       OrgRepos
     end,
   AllOrgsRepos = lists:flatmap(OrgReposFun, Orgs),
 
   PublicRepos =
-    [Repo || Repo <- Repos ++ AllOrgsRepos,
+    [Repo || Repo <- AllOrgsRepos,
              gadget_utils:is_admin(Repo),
              not gadget_utils:is_public(Repo)],
 

@@ -250,6 +250,8 @@ capitalize(<<C, Rest/binary>>) ->
   [Upper] = string:to_upper([C]),
   [Upper | binary_to_list(Rest)].
 
+-spec output_to_lines(Output::string()) ->
+  [iodata() | unicode:charlist()].
 output_to_lines(Output) ->
   DecodedOutput = unicode:characters_to_binary(Output),
   try

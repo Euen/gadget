@@ -33,8 +33,22 @@ handle(Req, State) ->
   Actions = application:get_env(gadget, pr_actions, DefaultPRActions),
   BodyJson = jiffy:decode(Body, [return_maps]),
   Action = maps:get(<<"action">>, BodyJson, <<"">>),
+  % Checks action first to avoid failing when first payload is sent by GitHub
+  % just after gadget register the webhook in the repository.
+  % This is because the first payload does not contain `action` key.
   case lists:member(Action, Actions) of
-    true -> process_request(ToolName, RequestMap, Req3, State);
+    true ->
+      #{<<"pull_request">> :=
+        #{<<"head">> :=
+          #{<<"repo">> :=
+            #{<<"owner">> :=
+              #{<<"login">> := Org}}}}} = BodyJson,
+      % Only process requests for valid organizations repositories
+      ValidOrgs = application:get_env(gadget, valid_organizations, []),
+      case lists:member(Org, ValidOrgs) of
+        true -> process_request(ToolName, RequestMap, Req3, State);
+        false -> return(403, <<"Event not  processed.">>, Req3, State)
+      end;
     false -> return(200, <<"Event ignored.">>, Req3, State)
   end.
 
