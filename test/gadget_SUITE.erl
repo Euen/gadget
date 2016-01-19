@@ -13,7 +13,9 @@
 -export([test_compiler/1]).
 -export([test_xref/1]).
 -export([test_dialyzer/1]).
--export([valid_organization_test/1, invalid_organization_test/1]).
+-export([ valid_organization_repositories_test/1
+        , valid_organization_payload_test/1
+        , invalid_organization_payload_test/1]).
 
 -type config() :: [{atom(), term()}].
 
@@ -56,12 +58,23 @@ end_per_suite(Config) ->
 
 %% @doc definion of init_per_testcases
 
-init_per_testcase(_Function, Config) ->
+-spec init_per_testcase(TestCase::atom(), Config::config()) -> config().
+init_per_testcase(valid_organization_repositories_test, Config) ->
+  ok = meck:new(egithub, [passthrough]),
+  ok = meck:expect(egithub, orgs, fun egithub_orgs/1),
+  ok = meck:expect(egithub, all_org_repos, fun egithub_all_org_repos/3),
+  ok = meck:expect(egithub, hooks, fun egithub_hooks/2),
+  Config;
+init_per_testcase(_TestCase, Config) ->
   Config.
 
 %% @doc definion of end_per_testcases
 
-end_per_testcase(_Function, Config) ->
+-spec end_per_testcase(TestCase::atom(), Config::config()) -> config().
+end_per_testcase(valid_organization_repositories_test, Config) ->
+  ok = meck:unload(egithub),
+  Config;
+end_per_testcase(_TestCase, Config) ->
   Config.
 
 -spec test_status(config()) -> config().
@@ -112,7 +125,7 @@ basic_test(Webhook, Config) ->
   Token = gadget_test_utils:get_github_client_secret(),
   _ = gadget_repos_repo:register("gadget-tester/user-repo", Webhook, Token),
   {ok, JsonBody} =
-    file:read_file("../../priv/initial-payload.json"),
+    file:read_file("../../test/github_payloads/initial-payload.json"),
   {ok, Response} =
     gadget_test_utils:api_call(get, "/webhook/compiler/", Header, JsonBody),
   % Given payload does not have an action key because it is the initial payload
@@ -120,30 +133,53 @@ basic_test(Webhook, Config) ->
   #{ status_code := 200, body := <<"Event ignored.">>} = Response,
   Config.
 
--spec valid_organization_test(Config::config()) -> config().
-valid_organization_test(Config) ->
+-spec valid_organization_repositories_test(Config::config()) -> config().
+valid_organization_repositories_test(Config) ->
+  [Repositories | _] = gadget_core:repositories({'oauth', "mycredentials"}),
+  <<"inaka/harry">> = proplists:get_value(full_name, Repositories),
+  Config.
+
+-spec valid_organization_payload_test(Config::config()) -> config().
+valid_organization_payload_test(Config) ->
   Header =
     #{  <<"Content-Type">> => <<"application/json">>
       , <<"x-github-event">> =>  <<"pull_request">>},
-  {ok, JsonBody} =
-    file:read_file("../../priv/valid_organization_payload.json"),
+  PayloadPath = "../../test/github_payloads/valid_organization_payload.json",
+  {ok, JsonBody} = file:read_file(PayloadPath),
   {ok, Response} =
-    gadget_test_utils:api_call(get,
-                               "/webhook/compiler/",
-                               Header,
-                               JsonBody,
-                               #{timeout => 15000}),
+    gadget_test_utils:api_call(get, "/webhook/elvis/", Header, JsonBody),
   #{ status_code := 200, body := <<"Event processed.">>} = Response,
   Config.
 
--spec invalid_organization_test(Config::config()) -> config().
-invalid_organization_test(Config) ->
+-spec invalid_organization_payload_test(Config::config()) -> config().
+invalid_organization_payload_test(Config) ->
   Header =
     #{  <<"Content-Type">> => <<"application/json">>
       , <<"x-github-event">> =>  <<"pull_request">>},
-  {ok, JsonBody} =
-    file:read_file("../../priv/invalid_organization_payload.json"),
+  PayloadPath = "../../test/github_payloads/invalid_organization_payload.json",
+  {ok, JsonBody} = file:read_file(PayloadPath),
   {ok, Response} =
     gadget_test_utils:api_call(get, "/webhook/compiler/", Header, JsonBody),
   #{ status_code := 403, body := <<"Event not  processed.">>} = Response,
   Config.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% PRIVATE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec egithub_orgs(Cred::tuple()) -> {ok, [map()]}.
+egithub_orgs(_Cred) ->
+  {ok, [Orgs | _]} = file:consult("../../test/meck_data/egithub__orgs.txt"),
+  {ok, Orgs}.
+
+-spec egithub_all_org_repos(Cred::tuple, OrgName::binary(), Opts::map()) ->
+  {ok, [map()]}.
+egithub_all_org_repos(_Cred, <<"inaka">>, _Opts) ->
+  {ok, [OrgRepos | _]} =
+    file:consult("../../test/meck_data/egithub__all_org_repos.txt"),
+  {ok, OrgRepos};
+egithub_all_org_repos(_Cred, _OrgName, _Opts) -> {ok, []}.
+
+-spec egithub_hooks(Cred::tuple(), FullName::binary()) -> {ok, [map()]}.
+egithub_hooks(_Cred, _FullName) ->
+  {ok, [Hooks | _]} = file:consult("../../test/meck_data/egithub__hooks.txt"),
+  {ok, Hooks}.
