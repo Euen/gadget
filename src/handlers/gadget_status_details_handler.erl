@@ -1,0 +1,33 @@
+%%% @doc Status handler
+-module(gadget_status_details_handler).
+
+-export([ init/3
+        , handle/2
+        , terminate/3
+        ]).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Handler Callbacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% @private
+-spec init({atom(), atom()}, cowboy_req:req(), term()) ->
+  {ok | shutdown, cowboy_req:req(), term()}.
+init(_Type, Req, _) ->
+  {ok, Req, []}.
+
+%% @private
+-spec handle(cowboy_req:req(), term()) -> {ok, cowboy_req:req(), term()}.
+handle(Req, State) ->
+  Headers = [{<<"content-type">>, <<"text/html">>}],
+  {Id, Req1} = cowboy_req:binding(id, Req),
+
+  Log = gadget_logs_repo:fetch(binary_to_integer(Id)),
+  ct:pal("Log::: ~p", [Log]),
+  {ok, Body} = status_dtl:render(Log),
+  {ok, Req2} = cowboy_req:reply(200, Headers, Body, Req1),
+  {ok, Req2, State}.
+
+%% @private
+-spec terminate(term(), cowboy_req:req(), term()) -> ok.
+terminate(_Reason, _Req, _State) -> ok.

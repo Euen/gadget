@@ -4,6 +4,7 @@
 -behaviour(egithub_webhook).
 
 -export([handle_pull_request/3]).
+-export([error_source/1]).
 
 %% @private
 -spec handle_pull_request(
@@ -13,6 +14,7 @@
 handle_pull_request(Cred, ReqData, GithubFiles) ->
   #{ <<"repository">> := Repository
    , <<"pull_request">> := PR
+   , <<"number">> := Number
    } = ReqData,
   #{ <<"full_name">> := RepoName
    } = Repository,
@@ -24,7 +26,8 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
 
   try gadget_utils:ensure_repo_dir(RepoName) of
     RepoDir ->
-      process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles)
+      process_pull_request( RepoDir, RepoName, Branch, GitUrl, GithubFiles
+                          , Number)
   catch
     _:Error ->
       _ = lager:warning(
@@ -33,7 +36,7 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
       {error, Error}
   end.
 
-process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
+process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
     Comments = extract_errors(gadget_utils:compile_project(RepoDir, verbose)),
@@ -43,7 +46,7 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
   catch
     _:{error, {status, ExitStatus, Output}} ->
       Lines = gadget_utils:output_to_lines(Output),
-      case error_source (Lines) of
+      case error_source(Lines) of
         unknown -> {error, {failed, ExitStatus}};
         compiler ->
           Comments1 = extract_errors(Lines),
@@ -51,7 +54,7 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
             gadget_utils:messages_from_comments("Compiler",
                                                 Comments1,
                                                 GithubFiles),
-          report_compiler_error(Messages1, ExitStatus)
+          report_compiler_error(Messages1, ExitStatus, Output, Number)
       end;
     _:Error ->
       _ = lager:warning(
@@ -90,9 +93,10 @@ extract_errors([Line|Lines], Regex, Errors) ->
     end,
   extract_errors(Lines, Regex, NewErrors).
 
+-spec error_source([binary()]) -> compiler | unknown.
 error_source(Lines) ->
   LastLines = lists:sublist(lists:reverse(Lines), 3),
-  Regexes = ["make[:] [*][*][*] [[][^]]*[]] Error",
+  Regexes = ["make.*?[:] [*][*][*] [[][^]]*[]] Error",
              "ERROR[:] compile failed",
              "Compiling .* failed$"],
   MatchesRegexes =
@@ -104,8 +108,10 @@ error_source(Lines) ->
     false -> unknown
   end.
 
-report_compiler_error([], ExitStatus) -> {error, {failed, ExitStatus}};
-report_compiler_error([#{commit_id := CommitId} | _] = Messages, ExitStatus) ->
+report_compiler_error([], ExitStatus, Lines, Number) ->
+  {error, {failed, ExitStatus}, save_log(Lines, Number)};
+report_compiler_error([#{commit_id := CommitId} | _] = Messages, ExitStatus,
+                      Lines, Number) ->
   ExtraMessage =
     #{commit_id => CommitId,
       path      => "",
@@ -113,4 +119,8 @@ report_compiler_error([#{commit_id := CommitId} | _] = Messages, ExitStatus) ->
       text      => <<"**Compiler** failed with exit status: ",
                      (integer_to_binary(ExitStatus))/binary>>
      },
-  {ok, [ExtraMessage | Messages]}.
+  {ok, [ExtraMessage | Messages], save_log(Lines, Number)}.
+
+save_log(Lines, Number) ->
+  #{id := Id} = gadget_logs_repo:create(compiler, Number, Lines),
+  gadget_utils:status_details_url(compiler, Number, Id).

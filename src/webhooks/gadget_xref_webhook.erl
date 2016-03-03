@@ -13,6 +13,7 @@
 handle_pull_request(Cred, ReqData, GithubFiles) ->
   #{ <<"repository">> := Repository
    , <<"pull_request">> := PR
+   , <<"number">> := Number
    } = ReqData,
   #{ <<"full_name">> := RepoName
    } = Repository,
@@ -24,7 +25,8 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
 
   try gadget_utils:ensure_repo_dir(RepoName) of
     RepoDir ->
-      process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles)
+      process_pull_request( RepoDir, RepoName, Branch, GitUrl, GithubFiles
+                          , Number)
   catch
     _:Error ->
       _ = lager:warning(
@@ -33,7 +35,7 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
       {error, Error}
   end.
 
-process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
+process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
     _ = gadget_utils:compile_project(RepoDir, silent),
@@ -47,6 +49,7 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
         , [RepoDir, RepoName, Branch, GitUrl, GithubFiles]
         , erlang:get_stacktrace()
         ]),
+      ct:pal("Error::: ~p", [Error]),
       {error, Error}
   after
     gadget_utils:ensure_dir_deleted(RepoDir)

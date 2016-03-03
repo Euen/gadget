@@ -45,6 +45,8 @@ start_phase(start_cowboy_listeners, _StartType, []) ->
           , {"/config", gadget_plain_dtl_handler, [config_dtl]}
           , {"/about", gadget_plain_dtl_handler, [about_dtl]}
           , {"/repos", gadget_repos_handler, []}
+          , { "/webhook/status-details/:pr/:tool/:id"
+            , gadget_status_details_handler, []}
           , {"/active-tools", gadget_on_handler, []}
           , {"/active-tools/:tool", gadget_off_handler, []}
           , {"/assets/[...]", cowboy_static, {dir, "assets"}}
@@ -94,7 +96,6 @@ webhook(ToolName, RequestMap) ->
 
   Repo = get_repo_name(RequestMap),
   Cred = github_credentials(),
-
   case gadget_repos_repo:fetch(Repo, Tool) of
     notfound ->
       egithub_webhook:event(Mod, Cred, RequestMap);

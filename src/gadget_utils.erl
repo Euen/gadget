@@ -15,6 +15,7 @@
         , format_message/2
         , webhook_info/1
         , output_to_lines/1
+        , status_details_url/3
         ]).
 
 -type comment() :: #{file   => string(),
@@ -250,6 +251,7 @@ capitalize(<<C, Rest/binary>>) ->
   [Upper] = string:to_upper([C]),
   [Upper | binary_to_list(Rest)].
 
+-spec output_to_lines(string()) -> [binary()] | any().
 output_to_lines(Output) ->
   DecodedOutput = unicode:characters_to_binary(Output),
   try
@@ -259,3 +261,9 @@ output_to_lines(Output) ->
       _ = lager:warning("Uncomprehensible output: ~p", [DecodedOutput]),
       Error
   end.
+
+-spec status_details_url(atom(), integer(), integer()) -> string().
+status_details_url(Tool, PrNumber, Id) ->
+  {ok, StatusDetailsUrl} = application:get_env(gadget, status_details_url),
+  lists:flatten(
+      io_lib:format("~s~p/~p/~p", [StatusDetailsUrl, PrNumber, Tool, Id])).
