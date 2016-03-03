@@ -14,7 +14,7 @@ LOCAL_DEPS = tools compiler syntax_tools common_test inets test_server dialyzer 
 dep_jiffy = git https://github.com/davisp/jiffy.git 0.14.5
 dep_sync = git https://github.com/rustyio/sync.git 9c78e7b
 dep_eper = git https://github.com/massemanet/eper.git 0.96.4
-dep_egithub = git https://github.com/inaka/erlang-github.git 0.1.19
+dep_egithub = git https://github.com/inaka/erlang-github.git 92c5a0a
 dep_elvis = git https://github.com/inaka/elvis.git 0.2.8
 dep_cowboy = git https://github.com/ninenines/cowboy.git 1.0.4
 dep_lager = git https://github.com/basho/lager.git 3.0.2
@@ -44,7 +44,7 @@ EDOC_OPTS += {application, gadget}, {subpackages, false}
 TEST_ERLC_OPTS += +'{parse_transform, lager_transform}' +debug_info
 CT_OPTS = -cover test/gadget.coverspec -erl_args -config ${CONFIG}
 
-SHELL_OPTS= -name ${PROJECT}@`hostname` -s sync -s ${PROJECT} -config ${CONFIG}
+SHELL_OPTS= -name ${PROJECT}@127.0.0.1 -s sync -s ${PROJECT} -config ${CONFIG}
 RUN_OPTS= -name gadget_internal@127.0.0.1 -setcookie gadget_internal -s ${PROJECT} -config ${CONFIG} -noshell
 
 erldocs: app

@@ -15,6 +15,7 @@
         , format_message/2
         , webhook_info/1
         , output_to_lines/1
+        , status_details_url/3
         ]).
 
 -type comment() :: #{file   => string(),
@@ -261,3 +262,9 @@ output_to_lines(Output) ->
       _ = lager:warning("Uncomprehensible output: ~p", [DecodedOutput]),
       Error
   end.
+
+-spec status_details_url(atom(), integer(), integer()) -> string().
+status_details_url(Tool, PrNumber, Id) ->
+  {ok, StatusDetailsUrl} = application:get_env(gadget, status_details_url),
+  lists:flatten(
+      io_lib:format("~s~p/~p/~p", [StatusDetailsUrl, PrNumber, Tool, Id])).

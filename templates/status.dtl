@@ -1,0 +1,11 @@
+{% extends "base.dtl" %}
+
+{% block title %}Status Details{% endblock %}
+
+{% block content %}
+<h1>{{ tool }}</h1>
+<h2>Details</h2>
+<pre>
+  {{ description }}
+</pre>
+{% endblock %}
