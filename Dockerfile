@@ -2,7 +2,7 @@ FROM debian:8.2
 
 RUN apt-get -y update
 RUN apt-get -y dist-upgrade
-RUN apt-get install --fix-missing -y build-essential libncurses5-dev openssl libssl-dev fop wget git vim mysql-client runit
+RUN apt-get install --fix-missing -y build-essential libncurses5-dev openssl libssl-dev fop wget git vim mysql-client runit libexpat1-dev
 
 COPY build/install_erlang.sh .
 RUN ./install_erlang.sh
