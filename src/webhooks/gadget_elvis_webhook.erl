@@ -15,12 +15,10 @@
 -spec handle_pull_request(
   egithub:credentials(), egithub_webhook:req_data(),
   [egithub_webhook:file()]) ->
-  {ok, [egithub_webhook:message()]} | {error, term()}.
+  {ok, [egithub_webhook:message()]}.
 handle_pull_request(Cred, Req, GithubFiles) ->
-  case elvis_webhook:handle_pull_request(Cred, Req, GithubFiles) of
-    {ok, Messages} -> {ok, format_messages(Messages)};
-    {error, Error} -> {error, Error}
-  end.
+  {ok, Messages} = elvis_webhook:handle_pull_request(Cred, Req, GithubFiles),
+  {ok, format_messages(Messages)}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Helper functions
