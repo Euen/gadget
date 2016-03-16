@@ -4,6 +4,9 @@ CONFIG ?= config/app.config
 ERLDOCS ?= ./erldocs
 
 DEPS = elvis katana cowboy lager erlydtl egithub shotgun eper xref_runner sumo_db epocxy jiffy
+# rebar has to be the last dep on the list, in order to avoid conflicts when compiling
+# rebar-ized dependencies
+DEPS += rebar
 TEST_DEPS = mixer meck
 SHELL_DEPS = sync
 LOCAL_DEPS = tools compiler syntax_tools common_test inets test_server dialyzer wx mnesia
