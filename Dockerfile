@@ -7,6 +7,10 @@ RUN apt-get install --fix-missing -y build-essential libncurses5-dev openssl lib
 COPY build/install_erlang.sh .
 RUN ./install_erlang.sh
 
+COPY build/install_quickcheck.sh .
+COPY build/install_quickcheck.escript /tmp/
+RUN ./install_quickcheck.sh
+
 RUN      mkdir -p /etc/sv/gadget
 RUN      mkdir -p /etc/sv/gadget/supervise
 RUN      ln -s /etc/sv/gadget /etc/service/gadget
