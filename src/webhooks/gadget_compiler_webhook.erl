@@ -109,7 +109,8 @@ error_source(Lines) ->
   end.
 
 report_compiler_error([], ExitStatus, Lines, Number) ->
-  {error, {failed, ExitStatus}, save_log(Lines, Number)};
+  DetailsUrl = gadget_utils:save_status_log(Lines, Number),
+  {error, {failed, ExitStatus}, DetailsUrl};
 report_compiler_error([#{commit_id := CommitId} | _] = Messages, ExitStatus,
                       Lines, Number) ->
   ExtraMessage =
@@ -119,8 +120,5 @@ report_compiler_error([#{commit_id := CommitId} | _] = Messages, ExitStatus,
       text      => <<"**Compiler** failed with exit status: ",
                      (integer_to_binary(ExitStatus))/binary>>
      },
-  {ok, [ExtraMessage | Messages], save_log(Lines, Number)}.
-
-save_log(Lines, Number) ->
-  #{id := Id} = gadget_logs_repo:create(compiler, Number, Lines),
-  gadget_utils:status_details_url(compiler, Number, Id).
+  DetailsUrl = gadget_utils:save_status_log(Lines, Number),
+  {ok, [ExtraMessage | Messages], DetailsUrl}.
