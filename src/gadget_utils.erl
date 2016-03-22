@@ -16,6 +16,7 @@
         , webhook_info/1
         , output_to_lines/1
         , status_details_url/3
+        , save_status_log/2
         ]).
 
 -type comment() :: #{file   => string(),
@@ -267,3 +268,8 @@ status_details_url(Tool, PrNumber, Id) ->
   {ok, StatusDetailsUrl} = application:get_env(gadget, status_details_url),
   lists:flatten(
       io_lib:format("~s~p/~p/~p", [StatusDetailsUrl, PrNumber, Tool, Id])).
+
+-spec save_status_log(string(), atom()) -> string().
+save_status_log(Lines, Number) ->
+  #{id := Id} = gadget_logs_repo:create(compiler, Number, Lines),
+  gadget_utils:status_details_url(compiler, Number, Id).
