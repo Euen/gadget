@@ -7,14 +7,15 @@
 -opaque log() ::
   #{ id => integer()
    , tool => string()
-   , pull_request => string()
+   , repository => string()
+   , pr_number => integer()
    , description => string()
    , created_at => binary()
    }.
 -export_type([log/0]).
 
--export([new/3]).
--export([id/1]).
+-export([new/4]).
+-export([id/1, repository/1, pr_number/1]).
 -export([sumo_schema/0, sumo_wakeup/1, sumo_sleep/1]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -26,9 +27,10 @@ sumo_schema() ->
   sumo:new_schema(?MODULE,
     [ sumo:new_field(id,           integer,  [id, not_null, auto_increment])
     , sumo:new_field(tool,         string,   [{length, 255}, not_null])
-    , sumo:new_field(pull_request, string,   [{length, 255}, not_null])
+    , sumo:new_field(repository,   string,   [{length, 255}, not_null])
+    , sumo:new_field(pr_number,    integer,  [not_null])
     , sumo:new_field(description,  string,   [{length, 255}, not_null])
-    , sumo:new_field(created_at,  datetime, [not_null])
+    , sumo:new_field(created_at,   datetime, [not_null])
     ]).
 
 %% @hidden
@@ -47,14 +49,23 @@ sumo_wakeup(Doc) ->
 %% PUBLIC API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% @doc creates a new log
--spec new(string(), atom(), string()) -> log().
-new(Tool, Pr, Description) ->
+-spec new(atom(), string(), integer(), string()) -> log().
+new(Tool, Repo, Pr, Description) ->
   #{ tool => Tool
-   , pull_request => Pr
+   , repository => Repo
+   , pr_number => Pr
    , description => Description
    , created_at => ktn_date:now_human_readable()
    }.
 
 %% @doc retrieves the log id
--spec id(log()) -> string().
-id(#{id := Token}) -> Token.
+-spec id(log()) -> integer().
+id(#{id := Id}) -> Id.
+
+%% @doc retrieves the log repository
+-spec repository(log()) -> string().
+repository(#{repository := Repo}) -> Repo.
+
+%% @doc retrieves the log pr_number
+-spec pr_number(log()) -> integer().
+pr_number(#{pr_number := PrNumber}) -> PrNumber.

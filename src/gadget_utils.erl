@@ -16,7 +16,8 @@
         , webhook_info/1
         , output_to_lines/1
         , status_details_url/3
-        , save_status_log/2
+        , save_status_log/4
+        , report_error/6
         ]).
 
 -type comment() :: #{file   => string(),
@@ -270,7 +271,25 @@ status_details_url(Tool, PrNumber, Id) ->
   lists:flatten(
       io_lib:format("~s~p/~p/~p", [StatusDetailsUrl, PrNumber, Tool, Id])).
 
--spec save_status_log(string(), atom()) -> string().
-save_status_log(Lines, Number) ->
-  #{id := Id} = gadget_logs_repo:create(compiler, Number, Lines),
-  gadget_utils:status_details_url(compiler, Number, Id).
+-spec save_status_log(atom(), string(), string(), integer()) -> string().
+save_status_log(Tool, Lines, Repo, PrNumber) ->
+  #{id := Id} = gadget_logs_repo:create(Tool, Repo, PrNumber, Lines),
+  status_details_url(Tool, PrNumber, Id).
+
+-spec report_error(atom(), list(), string(), integer(), string(), integer()) ->
+  {error, {failed, integer()}, string()} | {ok, [map()], string()}.
+report_error(Tool, [], Repo, ExitStatus, Lines, Number) ->
+  DetailsUrl = save_status_log(Tool, Lines, Repo, Number),
+  {error, {failed, ExitStatus}, DetailsUrl};
+report_error( Tool, [#{commit_id := CommitId} | _] = Messages, Repo, ExitStatus
+            , Lines, Number) ->
+  Text = io_lib:format( "**~p** failed with exit status: ~p"
+                      , [Tool, ExitStatus]),
+  ExtraMessage =
+    #{commit_id => CommitId,
+      path      => "",
+      position  => 0,
+      text      => list_to_binary(Text)
+     },
+  DetailsUrl = save_status_log(Tool, Lines, Repo, Number),
+  {ok, [ExtraMessage | Messages], DetailsUrl}.

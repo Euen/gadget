@@ -24,10 +24,21 @@ handle(Req, State) ->
 
   Log = gadget_logs_repo:fetch(binary_to_integer(Id)),
   ct:pal("Log::: ~p", [Log]),
-  {ok, Body} = status_dtl:render(Log),
+  Repo = gadget_logs:repository(Log),
+  PrNumber = gadget_logs:pr_number(Log),
+  Log1 = Log#{back_url => back_url(Repo, PrNumber)},
+  {ok, Body} = status_dtl:render(Log1),
   {ok, Req2} = cowboy_req:reply(200, Headers, Body, Req1),
   {ok, Req2, State}.
 
 %% @private
 -spec terminate(term(), cowboy_req:req(), term()) -> ok.
 terminate(_Reason, _Req, _State) -> ok.
+
+-spec back_url(string(), integer()) -> string().
+back_url(Repo, PrNumber) ->
+  lists:flatten([ "https://github.com/"
+                , Repo
+                , "/pull/"
+                , integer_to_list(PrNumber)
+                ]).

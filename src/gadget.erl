@@ -90,7 +90,6 @@ start() ->
 webhook(ToolName, RequestMap) ->
   #{ mod := Mod
    , tool := Tool
-   , name := Name
    , context := Context
    } = gadget_utils:webhook_info(ToolName),
 
