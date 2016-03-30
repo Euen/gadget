@@ -54,7 +54,12 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
             gadget_utils:messages_from_comments("Compiler",
                                                 Comments1,
                                                 GithubFiles),
-          report_compiler_error(Messages1, ExitStatus, Output, Number)
+          gadget_utils:report_error( compiler
+                                   , Messages1
+                                   , RepoName
+                                   , ExitStatus
+                                   , Output
+                                   , Number)
       end;
     _:Error ->
       _ = lager:warning(
@@ -107,18 +112,3 @@ error_source(Lines) ->
     true -> compiler;
     false -> unknown
   end.
-
-report_compiler_error([], ExitStatus, Lines, Number) ->
-  DetailsUrl = gadget_utils:save_status_log(Lines, Number),
-  {error, {failed, ExitStatus}, DetailsUrl};
-report_compiler_error([#{commit_id := CommitId} | _] = Messages, ExitStatus,
-                      Lines, Number) ->
-  ExtraMessage =
-    #{commit_id => CommitId,
-      path      => "",
-      position  => 0,
-      text      => <<"**Compiler** failed with exit status: ",
-                     (integer_to_binary(ExitStatus))/binary>>
-     },
-  DetailsUrl = gadget_utils:save_status_log(Lines, Number),
-  {ok, [ExtraMessage | Messages], DetailsUrl}.

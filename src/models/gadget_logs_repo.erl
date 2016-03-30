@@ -2,12 +2,12 @@
 -module(gadget_logs_repo).
 -author('euen@inaka.net').
 
--export([all/0, fetch/1, create/3]).
+-export([all/0, fetch/1, create/4]).
 
 %% @doc create a new Log
--spec create(string(), atom(), string()) -> gadget_logs:log().
-create(Tool, Pr, Description) ->
-  Log = gadget_logs:new(Tool, Pr, Description),
+-spec create(atom(), string(), integer(), string()) -> gadget_logs:log().
+create(Tool, Repo, PrNumber, Description) ->
+  Log = gadget_logs:new(Tool, Repo, PrNumber, Description),
   sumo:persist(gadget_logs, Log).
 
 %% @doc returns all logs
