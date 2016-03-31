@@ -5,10 +5,10 @@
 {% block content %}
 <h1>{{ tool }}</h1>
 <h2>Details</h2>
-
-<a href="{{ back_url }}">Back</a>
-
-<pre>
+<p><a class="button" href="{{ back_url }}">Back</a></p>
+<pre class="error-desc">
+<p">
   {{ description }}
+</p>
 </pre>
 {% endblock %}
