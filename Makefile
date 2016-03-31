@@ -7,7 +7,7 @@ DEPS = elvis katana cowboy lager erlydtl egithub shotgun eper xref_runner sumo_d
 # rebar has to be the last dep on the list, in order to avoid conflicts when compiling
 # rebar-ized dependencies
 DEPS += rebar
-TEST_DEPS = mixer meck
+TEST_DEPS = mixer katana_test meck
 SHELL_DEPS = sync
 LOCAL_DEPS = tools compiler syntax_tools common_test inets test_server dialyzer wx mnesia
 
@@ -15,7 +15,7 @@ dep_jiffy = git https://github.com/davisp/jiffy.git 0.14.5
 dep_sync = git https://github.com/rustyio/sync.git 9c78e7b
 dep_eper = git https://github.com/massemanet/eper.git 0.96.4
 dep_egithub = git https://github.com/inaka/erlang-github.git bf0c1bb
-dep_elvis = git https://github.com/inaka/elvis.git 0.2.8
+dep_elvis = git https://github.com/inaka/elvis.git 0.2.10
 dep_cowboy = git https://github.com/ninenines/cowboy.git 1.0.4
 dep_lager = git https://github.com/basho/lager.git 3.0.2
 dep_erlydtl = git https://github.com/erlydtl/erlydtl.git 0.11.1
@@ -23,7 +23,8 @@ dep_shotgun = git https://github.com/inaka/shotgun.git 13b6b44
 dep_xref_runner = git https://github.com/inaka/xref_runner.git 5e855dc
 dep_sumo_db = git https://github.com/inaka/sumo_db.git db463a6b93
 dep_epocxy = git https://github.com/duomark/epocxy.git 1.0.0
-dep_katana = git https://github.com/inaka/erlang-katana.git 0.2.17
+dep_katana = git https://github.com/inaka/erlang-katana.git 0.2.23
+dep_katana_test = git https://github.com/inaka/katana-test.git 0.0.5
 dep_meck = git https://github.com/eproxus/meck.git 0.8.4
 
 include erlang.mk
