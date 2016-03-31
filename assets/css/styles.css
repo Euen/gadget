@@ -262,3 +262,8 @@ h1, h2, h3, h4, h5 {
     background: url('/assets/img/loading.gif') center no-repeat;
     color: #DDD;
 }
+
+.error-desc{
+    word-wrap: break-word;
+    font-size: 15px;
+}
