@@ -28,7 +28,6 @@ handle_pull_request(Cred, Req, GithubFiles) ->
     {ok, format_messages(Messages)}
   catch
     _:Error ->
-      lager:warning("Err:: ~p", [Error]),
       Comments =
           [#{ file   => "elvis.config"
             , number => 0
@@ -38,7 +37,6 @@ handle_pull_request(Cred, Req, GithubFiles) ->
         gadget_utils:messages_from_comments("Elvis",
                                             Comments,
                                             GithubFiles),
-      lager:warning("Messages1:: ~p", [Messages1]),
       gadget_utils:report_error( elvis
                                , Messages1
                                , RepoName

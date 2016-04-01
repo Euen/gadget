@@ -15,7 +15,7 @@
 -export_type([log/0]).
 
 -export([new/4]).
--export([id/1, repository/1, pr_number/1]).
+-export([id/1, repository/1, pr_number/1, back_url/1, back_url/2]).
 -export([sumo_schema/0, sumo_wakeup/1, sumo_sleep/1]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,3 +69,11 @@ repository(#{repository := Repo}) -> Repo.
 %% @doc retrieves the log pr_number
 -spec pr_number(log()) -> integer().
 pr_number(#{pr_number := PrNumber}) -> PrNumber.
+
+%% @doc retrieves `back_url' from the given `log()'
+-spec back_url(log()) -> string().
+back_url(#{back_url := BackUrl}) -> BackUrl.
+
+%% @doc set a new value for `back_url' in the given `log()'
+-spec back_url(log(), string()) -> log().
+back_url(Log, BackUrl) -> Log#{back_url => BackUrl}.

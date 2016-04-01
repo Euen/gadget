@@ -100,7 +100,7 @@ webhook(ToolName, RequestMap) ->
       egithub_webhook:event(Mod, Cred, RequestMap);
     GadgetRepo ->
       Token = gadget_repos:token(GadgetRepo),
-      StatusCred = egithub:oauth(binary_to_list(Token)),
+      StatusCred = egithub:oauth(Token),
       Args = [Mod, StatusCred, atom_to_list(Tool), Context, Cred, RequestMap],
       cxy_ctl:execute_task(webhook, egithub_webhook, event, Args)
   end.

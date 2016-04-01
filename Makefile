@@ -70,25 +70,24 @@ plt-all: test-deps test-build-plt plt
 
 dialyze-all: app test-build-plt dialyze
 
-ERLYDTL_OPTS += debug_info, {parse_transform, lager_transform}
-
 # Remove this override once PR 361 is merged and replace with
 # (https://github.com/ninenines/erlang.mk/pull/361)
+ERLYDTL_OPTS += debug_info, {parse_transform, lager_transform}
 
 define erlydtl_compile.erl
-	[begin
-		Module0 = case "$(strip $(DTL_FULL_PATH))" of
-			"" ->
-				filename:basename(F, ".dtl");
-			_ ->
-				"$(DTL_PATH)" ++ F2 = filename:rootname(F, ".dtl"),
-				re:replace(F2, "/",  "_",  [{return, list}, global])
-		end,
-		Module = list_to_atom(string:to_lower(Module0) ++ "$(DTL_SUFFIX)"),
-		case erlydtl:compile(F, Module, [$(ERLYDTL_OPTS)] ++ [{out_dir, "ebin/"}, return_errors, {doc_root, "templates"}]) of
-			ok -> ok;
-			{ok, _} -> ok
-		end
-	end || F <- string:tokens("$(1)", " ")],
-	halt().
+        [begin
+                Module0 = case "$(strip $(DTL_FULL_PATH))" of
+                        "" ->
+                                filename:basename(F, ".dtl");
+                        _ ->
+                                "$(DTL_PATH)" ++ F2 = filename:rootname(F, ".dtl"),
+                                re:replace(F2, "/",  "_",  [{return, list}, global])
+                end,
+                Module = list_to_atom(string:to_lower(Module0) ++ "$(DTL_SUFFIX)"),
+                case erlydtl:compile(F, Module, [$(ERLYDTL_OPTS)] ++ [{out_dir, "ebin/"}, return_errors, {doc_root, "templates"}]) of
+                        ok -> ok;
+                        {ok, _} -> ok
+                end
+        end || F <- string:tokens("$(1)", " ")],
+        halt().
 endef
