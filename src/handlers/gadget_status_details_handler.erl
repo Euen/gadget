@@ -23,7 +23,6 @@ handle(Req, State) ->
   {Id, Req1} = cowboy_req:binding(id, Req),
 
   Log = gadget_logs_repo:fetch(binary_to_integer(Id)),
-  ct:pal("Log::: ~p", [Log]),
   Repo = gadget_logs:repository(Log),
   PrNumber = gadget_logs:pr_number(Log),
   Log1 = gadget_logs:back_url(Log, back_url(Repo, PrNumber)),

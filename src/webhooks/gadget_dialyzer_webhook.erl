@@ -25,7 +25,12 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
 
   try gadget_utils:ensure_repo_dir(RepoName) of
     RepoDir ->
-      process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number)
+      process_pull_request(RepoDir,
+                           RepoName,
+                           Branch,
+                           GitUrl,
+                           GithubFiles,
+                           Number)
   catch
     _:Error ->
       _ = lager:warning(
