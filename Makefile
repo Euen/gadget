@@ -19,6 +19,8 @@ dep_elvis = git https://github.com/inaka/elvis.git 0.2.10
 dep_cowboy = git https://github.com/ninenines/cowboy.git 1.0.4
 dep_lager = git https://github.com/basho/lager.git 3.0.2
 dep_erlydtl = git https://github.com/erlydtl/erlydtl.git 0.11.1
+# Don't upgrade shotgun's version until we start using cowboy 2.0.x.
+# Shotgun 0.2.2 uses cowlib 1.0.2 and cowboy 1.0.4 uses cowlib 1.3.0.
 dep_shotgun = git https://github.com/inaka/shotgun.git 0.2.0
 dep_rebar = git https://github.com/rebar/rebar.git 2.6.1
 dep_xref_runner = git https://github.com/inaka/xref_runner.git 5e855dc
