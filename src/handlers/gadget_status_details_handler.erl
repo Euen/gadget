@@ -26,7 +26,7 @@ handle(Req, State) ->
   ct:pal("Log::: ~p", [Log]),
   Repo = gadget_logs:repository(Log),
   PrNumber = gadget_logs:pr_number(Log),
-  Log1 = Log#{back_url => back_url(Repo, PrNumber)},
+  Log1 = gadget_logs:back_url(Log, back_url(Repo, PrNumber)),
   {ok, Body} = status_dtl:render(Log1),
   {ok, Req2} = cowboy_req:reply(200, Headers, Body, Req1),
   {ok, Req2, State}.
