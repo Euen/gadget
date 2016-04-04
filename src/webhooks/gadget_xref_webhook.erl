@@ -13,9 +13,9 @@
 handle_pull_request(Cred, ReqData, GithubFiles) ->
   #{ <<"repository">> := Repository
    , <<"pull_request">> := PR
+   , <<"number">> := Number
    } = ReqData,
-  #{ <<"full_name">> := RepoName
-   } = Repository,
+  #{<<"full_name">> := RepoName} = Repository,
   #{ <<"head">> :=
       #{ <<"ref">> := Branch
        , <<"repo">> := #{<<"clone_url">> := GitUrl}
@@ -24,7 +24,8 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
 
   try gadget_utils:ensure_repo_dir(RepoName) of
     RepoDir ->
-      process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles)
+      process_pull_request( RepoDir, RepoName, Branch, GitUrl, GithubFiles
+                          , Number)
   catch
     _:Error ->
       _ = lager:warning(
@@ -33,13 +34,21 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
       {error, Error}
   end.
 
-process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
+process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
     _ = gadget_utils:compile_project(RepoDir, silent),
     Comments = xref_project(RepoDir),
     {ok, gadget_utils:messages_from_comments("Xref", Comments, GithubFiles)}
   catch
+    _:{error, {status, ExitStatus, Output}} ->
+      gadget_utils:catch_error_source( Output
+                                     , ExitStatus
+                                     , xref
+                                     , GithubFiles
+                                     , RepoName
+                                     , Number
+                                     );
     _:Error ->
       _ = lager:warning(
         "Couldn't process PR: ~p~nParams: ~p~nStack: ~p",
