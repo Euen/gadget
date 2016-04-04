@@ -13,6 +13,7 @@
 handle_pull_request(Cred, ReqData, GithubFiles) ->
   #{ <<"repository">> := Repository
    , <<"pull_request">> := PR
+   , <<"number">> := Number
    } = ReqData,
   #{ <<"full_name">> := RepoName
    } = Repository,
@@ -24,7 +25,13 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
 
   try gadget_utils:ensure_repo_dir(RepoName) of
     RepoDir ->
-      process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles)
+      process_pull_request( RepoDir
+                          , RepoName
+                          , Branch
+                          , GitUrl
+                          , GithubFiles
+                          , Number
+                          )
   catch
     _:Error ->
       _ = lager:warning(
@@ -33,7 +40,7 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
       {error, Error}
   end.
 
-process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
+process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
     case filelib:is_regular(filename:join(RepoDir, "erlang.mk")) of
@@ -48,6 +55,14 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles) ->
         {ok, Messages}
     end
   catch
+    _:{error, {status, ExitStatus, Output}} ->
+      gadget_utils:catch_error_source( Output
+                                     , ExitStatus
+                                     , dialyzer
+                                     , GithubFiles
+                                     , RepoName
+                                     , Number
+                                     );
     _:Error ->
       _ = lager:warning(
         "Couldn't process PR: ~p~nParams: ~p~nStack: ~p",

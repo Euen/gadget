@@ -4,23 +4,28 @@ CONFIG ?= config/app.config
 ERLDOCS ?= ./erldocs
 
 DEPS = elvis katana cowboy lager erlydtl egithub shotgun eper xref_runner sumo_db epocxy jiffy
-TEST_DEPS = mixer meck
+
+TEST_DEPS = mixer katana_test meck
 SHELL_DEPS = sync
 LOCAL_DEPS = tools compiler syntax_tools common_test inets test_server dialyzer wx mnesia
 
 dep_jiffy = git https://github.com/davisp/jiffy.git 0.14.5
 dep_sync = git https://github.com/rustyio/sync.git 9c78e7b
 dep_eper = git https://github.com/massemanet/eper.git 0.96.4
-dep_egithub = git https://github.com/inaka/erlang-github.git 0.1.19
-dep_elvis = git https://github.com/inaka/elvis.git 0.2.8
+dep_egithub = git https://github.com/inaka/erlang-github.git 6a3c050
+dep_elvis = git https://github.com/inaka/elvis.git 0.2.10
 dep_cowboy = git https://github.com/ninenines/cowboy.git 1.0.4
 dep_lager = git https://github.com/basho/lager.git 3.0.2
 dep_erlydtl = git https://github.com/erlydtl/erlydtl.git 0.11.1
-dep_shotgun = git https://github.com/inaka/shotgun.git 13b6b44
+# Don't upgrade shotgun's version until we start using cowboy 2.0.x.
+# Shotgun 0.2.2 uses cowlib 1.0.2 and cowboy 1.0.4 uses cowlib 1.3.0.
+dep_shotgun = git https://github.com/inaka/shotgun.git 0.2.0
+dep_rebar = git https://github.com/rebar/rebar.git 2.6.1
 dep_xref_runner = git https://github.com/inaka/xref_runner.git 5e855dc
 dep_sumo_db = git https://github.com/inaka/sumo_db.git db463a6b93
 dep_epocxy = git https://github.com/duomark/epocxy.git 1.0.0
-dep_katana = git https://github.com/inaka/erlang-katana.git 0.2.17
+dep_katana = git https://github.com/inaka/erlang-katana.git 0.2.23
+dep_katana_test = git https://github.com/inaka/katana-test.git 0.0.5
 dep_meck = git https://github.com/eproxus/meck.git 0.8.4
 
 include erlang.mk
@@ -41,7 +46,7 @@ EDOC_OPTS += {application, gadget}, {subpackages, false}
 TEST_ERLC_OPTS += +'{parse_transform, lager_transform}' +debug_info
 CT_OPTS = -cover test/gadget.coverspec -erl_args -config ${CONFIG}
 
-SHELL_OPTS= -name ${PROJECT}@`hostname` -s sync -s ${PROJECT} -config ${CONFIG}
+SHELL_OPTS= -name ${PROJECT}@127.0.0.1 -s sync -s ${PROJECT} -config ${CONFIG}
 RUN_OPTS= -name gadget_internal@127.0.0.1 -setcookie gadget_internal -s ${PROJECT} -config ${CONFIG} -noshell
 
 erldocs: app
@@ -65,25 +70,24 @@ plt-all: test-deps test-build-plt plt
 
 dialyze-all: app test-build-plt dialyze
 
-ERLYDTL_OPTS += debug_info, {parse_transform, lager_transform}
-
 # Remove this override once PR 361 is merged and replace with
 # (https://github.com/ninenines/erlang.mk/pull/361)
+ERLYDTL_OPTS += debug_info, {parse_transform, lager_transform}
 
 define erlydtl_compile.erl
-	[begin
-		Module0 = case "$(strip $(DTL_FULL_PATH))" of
-			"" ->
-				filename:basename(F, ".dtl");
-			_ ->
-				"$(DTL_PATH)" ++ F2 = filename:rootname(F, ".dtl"),
-				re:replace(F2, "/",  "_",  [{return, list}, global])
-		end,
-		Module = list_to_atom(string:to_lower(Module0) ++ "$(DTL_SUFFIX)"),
-		case erlydtl:compile(F, Module, [$(ERLYDTL_OPTS)] ++ [{out_dir, "ebin/"}, return_errors, {doc_root, "templates"}]) of
-			ok -> ok;
-			{ok, _} -> ok
-		end
-	end || F <- string:tokens("$(1)", " ")],
-	halt().
+        [begin
+                Module0 = case "$(strip $(DTL_FULL_PATH))" of
+                        "" ->
+                                filename:basename(F, ".dtl");
+                        _ ->
+                                "$(DTL_PATH)" ++ F2 = filename:rootname(F, ".dtl"),
+                                re:replace(F2, "/",  "_",  [{return, list}, global])
+                end,
+                Module = list_to_atom(string:to_lower(Module0) ++ "$(DTL_SUFFIX)"),
+                case erlydtl:compile(F, Module, [$(ERLYDTL_OPTS)] ++ [{out_dir, "ebin/"}, return_errors, {doc_root, "templates"}]) of
+                        ok -> ok;
+                        {ok, _} -> ok
+                end
+        end || F <- string:tokens("$(1)", " ")],
+        halt().
 endef

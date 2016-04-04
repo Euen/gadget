@@ -23,8 +23,8 @@ init(_Transport, _Req, _Opts) ->
   {upgrade, protocol, cowboy_rest}.
 
 %% @private
--spec rest_init(cowboy_req:req(), term()) ->
-  {ok, cowboy_req:req(), #state{}}.
+-spec rest_init(cowboy_req:req(), state()) ->
+  {ok, cowboy_req:req(), state()}.
 rest_init(Req, _Opts) ->
   {ok, Req, #state{}}.
 
