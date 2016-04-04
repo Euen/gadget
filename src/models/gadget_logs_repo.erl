@@ -11,7 +11,7 @@ create(Tool, Repo, PrNumber, Description) ->
   sumo:persist(gadget_logs, Log).
 
 %% @doc returns all logs
--spec all() -> [gadget_repos:repo()].
+-spec all() -> [gadget_logs:log()].
 all() -> sumo:find_all(gadget_logs).
 
 %% @doc returns a particular log

@@ -15,8 +15,7 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
    , <<"pull_request">> := PR
    , <<"number">> := Number
    } = ReqData,
-  #{ <<"full_name">> := RepoName
-   } = Repository,
+  #{<<"full_name">> := RepoName} = Repository,
   #{ <<"head">> :=
       #{ <<"ref">> := Branch
        , <<"repo">> := #{<<"clone_url">> := GitUrl}
@@ -43,22 +42,13 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
     {ok, gadget_utils:messages_from_comments("Xref", Comments, GithubFiles)}
   catch
     _:{error, {status, ExitStatus, Output}} ->
-        Lines = gadget_utils:output_to_lines(Output),
-        case error_source(Lines) of
-          unknown -> {error, {failed, ExitStatus}};
-          xref ->
-            Comments1 = extract_errors(Lines),
-            Messages1 =
-              gadget_utils:messages_from_comments("Xref",
-                                                  Comments1,
-                                                  GithubFiles),
-            gadget_utils:report_error( xref
-                                     , Messages1
-                                     , RepoName
+      gadget_utils:catch_error_source( Output
                                      , ExitStatus
-                                     , Output
-                                     , Number)
-        end;
+                                     , xref
+                                     , GithubFiles
+                                     , RepoName
+                                     , Number
+                                     );
     _:Error ->
       _ = lager:warning(
         "Couldn't process PR: ~p~nParams: ~p~nStack: ~p",
@@ -69,48 +59,6 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
       {error, Error}
   after
     gadget_utils:ensure_dir_deleted(RepoDir)
-  end.
-
-extract_errors(Lines) ->
-  {ok, Regex} = re:compile(<<"(.+):([0-9]*): (.+)">>),
-  extract_errors(Lines, Regex, []).
-extract_errors([], _Regex, Errors) -> Errors;
-extract_errors([Line|Lines], Regex, Errors) ->
-  NewErrors =
-    case re:run(Line, Regex, [{capture, all_but_first, binary}]) of
-      {match, [File, <<>>, Comment]} ->
-        [#{ file   => File
-          , number => 0
-          , text   => Comment
-          } | Errors];
-      {match, [File, Number, Comment]} ->
-        [#{ file   => File
-          , number => binary_to_integer(Number)
-          , text   => Comment
-          } | Errors];
-      {match, Something} ->
-        _ = lager:error("WHAT? ~p", [Something]),
-        [];
-      _ ->
-        Errors
-    end,
-  extract_errors(Lines, Regex, NewErrors).
-
-
-
--spec error_source([binary()]) -> xref | unknown.
-error_source(Lines) ->
-  LastLines = lists:sublist(lists:reverse(Lines), 3),
-  Regexes = ["make.*?[:] [*][*][*] [[][^]]*[]] Error",
-             "ERROR[:] compile failed",
-             "Compiling .* failed$"],
-  MatchesRegexes =
-    fun(Line) ->
-      lists:any(fun(Regex) -> nomatch /= re:run(Line, Regex) end, Regexes)
-    end,
-  case lists:any(MatchesRegexes, LastLines) of
-    true -> xref;
-    false -> unknown
   end.
 
 xref_project(RepoDir) ->

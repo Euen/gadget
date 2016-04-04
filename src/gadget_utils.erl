@@ -18,6 +18,8 @@
         , status_details_url/3
         , save_status_log/4
         , report_error/6
+        , catch_error_source/6
+        , extract_errors/1
         ]).
 
 -type comment() :: #{file   => string(),
@@ -33,7 +35,9 @@
                       , status => on | off
                       , hook_id => binary()
                       }.
--export_type([webhook_info/0, comment/0, tool_info/0]).
+-type tool() :: xref | elvis | compiler | dialyzer.
+-export_type([webhook_info/0, comment/0, tool_info/0, tool/0]).
+
 
 %% @doc Retrieves the list of active webhook tools
 -spec active_tools([map()]) -> [tool_info()].
@@ -292,3 +296,65 @@ report_error( Tool, [#{commit_id := CommitId} | _] = Messages, Repo, ExitStatus
      },
   DetailsUrl = save_status_log(Tool, Lines, Repo, Number),
   {ok, [ExtraMessage | Messages], DetailsUrl}.
+
+
+-spec catch_error_source(Output::string(),
+                         ExitStatus::integer(),
+                         Tool::tool(),
+                         GithubFiles::[egithub_webhook:file()],
+                         RepoName::string(),
+                         Number::integer()) ->
+  {error, {failed, integer()}} |
+  {error, {failed, integer()}, string()} |
+  {ok, [map()], string()}.
+catch_error_source(Output, ExitStatus, Tool, GithubFiles, RepoName, Number) ->
+  Lines = output_to_lines(Output),
+  case error_source(Lines, Tool) of
+    unknown -> {error, {failed, ExitStatus}};
+    Tool ->
+      Comments = extract_errors(Lines),
+      ToolName = capitalize(atom_to_binary(Tool, utf8)),
+      Messages = messages_from_comments(ToolName, Comments, GithubFiles),
+      report_error(Tool, Messages, RepoName, ExitStatus, Output, Number)
+  end.
+
+-spec extract_errors(Lines::[binary()]) -> [map()] | [].
+extract_errors(Lines) ->
+  {ok, Regex} = re:compile(<<"(.+):([0-9]*): (.+)">>),
+  extract_errors(Lines, Regex, []).
+extract_errors([], _Regex, Errors) -> Errors;
+extract_errors([Line|Lines], Regex, Errors) ->
+  NewErrors =
+    case re:run(Line, Regex, [{capture, all_but_first, binary}]) of
+      {match, [File, <<>>, Comment]} ->
+        [#{ file   => File
+          , number => 0
+          , text   => Comment
+          } | Errors];
+      {match, [File, Number, Comment]} ->
+        [#{ file   => File
+          , number => binary_to_integer(Number)
+          , text   => Comment
+          } | Errors];
+      {match, Something} ->
+        _ = lager:error("WHAT? ~p", [Something]),
+        [];
+      _ ->
+        Errors
+    end,
+  extract_errors(Lines, Regex, NewErrors).
+
+-spec error_source(Lines::[binary()], Tool::tool()) -> tool() | unknown.
+error_source(Lines, Tool) ->
+  LastLines = lists:sublist(lists:reverse(Lines), 3),
+  Regexes = ["make.*?[:] [*][*][*] [[][^]]*[]] Error",
+             "ERROR[:] compile failed",
+             "Compiling .* failed$"],
+  MatchesRegexes =
+    fun(Line) ->
+      lists:any(fun(Regex) -> nomatch /= re:run(Line, Regex) end, Regexes)
+    end,
+  case lists:any(MatchesRegexes, LastLines) of
+    true -> Tool;
+    false -> unknown
+  end.
