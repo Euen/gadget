@@ -266,4 +266,5 @@ h1, h2, h3, h4, h5 {
 .error-desc{
     word-wrap: break-word;
     font-size: 15px;
+    overflow-x: scroll;
 }
