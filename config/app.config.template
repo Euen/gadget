@@ -23,7 +23,8 @@
     },
     {docs,
      [
-      {gadget_repos, gadget_store_mnesia}
+      {gadget_repos, gadget_store_mnesia},
+      {gadget_logs, gadget_store_mnesia}
      ]
     },
     {events, []}
@@ -36,6 +37,7 @@
     {github_scope, "repo,repo:status,read:org"},
     {github_client_id, "bcn98345nv2098682c69"},
     {github_client_secret, "98vb98nbsbfgdjdlh87s986s08724958nfgdv"},
+    {status_details_url, "http://gadget.inakalabs.com/webhook/status-details/"},
     %% Webhooks
     {webhooks,
       #{elvis     => "http://gadget-internal.inakalabs.com/webhook/elvis",
