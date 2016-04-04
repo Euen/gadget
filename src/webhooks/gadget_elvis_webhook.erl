@@ -21,8 +21,7 @@ handle_pull_request(Cred, Req, GithubFiles) ->
   #{ <<"repository">> := Repository
    , <<"number">> := Number
    } = Req,
-  #{ <<"full_name">> := RepoName
-   } = Repository,
+  #{<<"full_name">> := RepoName} = Repository,
   try
     {ok, Messages} = elvis_webhook:handle_pull_request(Cred, Req, GithubFiles),
     {ok, format_messages(Messages)}
@@ -33,16 +32,17 @@ handle_pull_request(Cred, Req, GithubFiles) ->
             , number => 0
             , text   => Error
             }],
-      Messages1 =
-        gadget_utils:messages_from_comments("Elvis",
-                                            Comments,
-                                            GithubFiles),
+      Messages1 = gadget_utils:messages_from_comments( "Elvis"
+                                                     , Comments
+                                                     , GithubFiles
+                                                     ),
       gadget_utils:report_error( elvis
                                , Messages1
                                , RepoName
                                , 1
                                , lists:flatten(io_lib:format("~p", [Error]))
-                               , Number)
+                               , Number
+                               )
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
