@@ -48,7 +48,7 @@ unregister(Repo, Tool, Token) ->
 
 -spec repositories(egithub:credentials()) -> list().
 repositories(Cred) ->
-  Opts = #{type => <<"owner">>},
+  Opts = #{type => <<"owner">>, per_page => 100},
   {ok, Repos} = egithub:all_repos(Cred, Opts),
   {ok, Orgs} = egithub:orgs(Cred),
 
