@@ -138,17 +138,17 @@ unique_id() ->
 -spec compile_project(file:name_all(), verbose | silent) -> [string()].
 compile_project(RepoDir, Verbosity) ->
   Output =
-    case filelib:is_regular(filename:join(RepoDir, "Makefile")) of
-      true -> make_project(RepoDir, Verbosity);
+    case filelib:is_regular(filename:join(RepoDir, "rebar.config")) of
+      true -> rebarize_project(RepoDir, Verbosity);
       false ->
-        case filelib:is_regular(filename:join(RepoDir, "rebar.config")) of
-          true -> rebarize_project(RepoDir, Verbosity);
+        case filelib:is_regular(filename:join(RepoDir, "Makefile")) of
+          true -> make_project(RepoDir, Verbosity);
           false ->
             _ = lager:warning(
               "No Makefile nor rebar.config in ~p:\n\t~s",
               [RepoDir, filelib:wildcard(filename:join(RepoDir, "*"))]),
             throw(cant_compile)
-        end
+      end
     end,
   output_to_lines(Output).
 
@@ -157,20 +157,37 @@ make_project(RepoDir, verbose) ->
 make_project(RepoDir, silent) -> run_command(["cd ", RepoDir, "; make"]).
 
 rebarize_project(RepoDir, Verbosity) ->
-  Rebar =
-    case os:find_executable("rebar") of
-      false -> filename:absname("deps/rebar/rebar");
-      Exec -> Exec
-    end,
-  VerbOption =
-    case Verbosity of
-      verbose -> " --verbose";
-      silent -> ""
-    end,
-  _ =
-    run_command(["cd ", RepoDir, "; ", Rebar, VerbOption, " get-deps compile"]),
-  _ =
-    run_command(["cd ", RepoDir, "; ", Rebar, " skip_deps=true clean compile"]).
+  % If rebar is included in the repo, use it.
+  RebarIncluded = filelib:is_file(filename:join(RepoDir, "rebar")),
+  case RebarIncluded of
+    true ->
+      Rebar = filename:join(RepoDir, "rebar"),
+      VerbOption =
+        case Verbosity of
+          verbose -> " --verbose";
+          silent -> ""
+        end,
+      % Compiles everything (deps and app).
+      _ = run_command(["cd ", RepoDir, "; ",
+                       Rebar, VerbOption, " get-deps compile"]),
+      % Just like the last command but avoid getting deps warnings, just
+      % app warnings are important here.
+      run_command(["cd ", RepoDir, "; ",
+                   Rebar, " skip_deps=true clean compile"]);
+    false ->
+      Rebar3Included = filelib:is_file(filename:join(RepoDir, "rebar3")),
+      VerbOption =
+        case Verbosity of
+          verbose -> " DEBUG=1 ";
+          silent  -> ""
+        end,
+      Rebar =
+        case Rebar3Included of
+          true -> filename:join(RepoDir, "rebar3");
+          false -> filename:absname("deps/rebar/rebar3")
+        end,
+      run_command(["cd ", RepoDir, "; ", VerbOption, Rebar, " compile"])
+  end.
 
 %% @doc generates egithub_webhook:messages from a list of comments
 -spec messages_from_comments(string(), [comment()], [egithub_webhook:file()]) ->
