@@ -88,6 +88,7 @@ start() ->
 %% @doc runs a particular webhook on a PR
 -spec webhook(binary(), map()) -> ok | {error, term()}.
 webhook(ToolName, RequestMap) ->
+  ct:pal("INFO:: ~p", [gadget_utils:webhook_info(ToolName)]),
   #{ mod := Mod
    , tool := Tool
    , context := Context

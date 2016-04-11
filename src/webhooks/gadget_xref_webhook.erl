@@ -38,8 +38,22 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
     _ = gadget_utils:compile_project(RepoDir, silent),
-    Comments = xref_project(RepoDir),
-    {ok, gadget_utils:messages_from_comments("Xref", Comments, GithubFiles)}
+    Comments =
+      case filelib:is_regular(filename:join(RepoDir, "rebar.config")) of
+        true -> xref_project(RepoDir);
+        false ->
+          case filelib:is_regular(filename:join(RepoDir, "erlang.mk")) of
+            false ->
+              throw({error,
+                          {status, 1, "Not rebar.config nor erlang.mk found"}});
+            true ->
+              xref_project(RepoDir)
+          end
+      end,
+    ct:pal("Comments -> ~p", [Comments]),
+    Messages =
+      gadget_utils:messages_from_comments("Xref", Comments, GithubFiles),
+    {ok, Messages}
   catch
     _:{error, {status, ExitStatus, Output}} ->
       gadget_utils:catch_error_source( Output
@@ -53,7 +67,7 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
       _ = lager:warning(
         "Couldn't process PR: ~p~nParams: ~p~nStack: ~p",
         [ Error
-        , [RepoDir, RepoName, Branch, GitUrl, GithubFiles]
+        , [RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number]
         , erlang:get_stacktrace()
         ]),
       {error, Error}
@@ -67,6 +81,15 @@ xref_project(RepoDir) ->
     ok = set_cwd(RepoNode, RepoDir),
     XrefWarnings = run_xref(RepoNode),
     [generate_comment(RepoDir, XrefWarning) || XrefWarning <- XrefWarnings]
+  catch
+    _:Error ->
+      _ = lager:warning(
+        "Couldn't process PR: ~p~nParams: ~p~nStack: ~p",
+        [ Error
+        , [RepoDir]
+        , erlang:get_stacktrace()
+        ]),
+      throw({error, {status, 1, Error}})
   after
     stop_node(RepoNode)
   end.
@@ -96,6 +119,7 @@ run_xref(RepoNode) ->
   rpc:call(RepoNode, xref_runner, check, []).
 
 generate_comment(RepoDir, XrefWarning) ->
+  ct:pal("XrefWarning ~p", [XrefWarning]),
   #{ filename := Filename
    , line     := Line
    , source   := Source

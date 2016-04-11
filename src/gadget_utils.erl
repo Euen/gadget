@@ -178,7 +178,7 @@ rebarize_project(RepoDir, Verbosity) ->
       Rebar3Included = filelib:is_file(filename:join(RepoDir, "rebar3")),
       VerbOption =
         case Verbosity of
-          verbose -> " DEBUG=1 ";
+          verbose -> " DEBUG=1 TERM=dumb ";
           silent  -> ""
         end,
       Rebar =
@@ -210,17 +210,27 @@ messages_from_comment(ToolName, Comment, GithubFiles) ->
    } = Comment,
   MatchingFiles =
     [GithubFile
-     || #{ <<"filename">>  := Filename
+     || #{ <<"filename">>  := FileName
          , <<"status">>    := Status
          } = GithubFile <- GithubFiles
-          , Filename == File
+          , true == ends_with(File, FileName)
           , Status /= <<"deleted">>
     ],
   case MatchingFiles of
     [] -> [];
     [MatchingFile|_] ->
       FullText = format_message(ToolName, Text),
-      messages_from_comment(File, Line, FullText, MatchingFile)
+      #{<<"filename">> := FileName} = MatchingFile,
+      messages_from_comment(FileName, Line, FullText, MatchingFile)
+  end.
+
+ends_with(Big, Small) ->
+  LBig = erlang:size(Big),
+  LSmall = erlang:size(Small),
+  LRest = LBig - LSmall,
+  case Big of
+    <<_:LRest/binary, Small/binary>> -> true;
+    _Other -> false
   end.
 
 messages_from_comment(Filename, 0, Text, File) ->
@@ -314,7 +324,6 @@ report_error( Tool, [#{commit_id := CommitId} | _] = Messages, Repo, ExitStatus
   DetailsUrl = save_status_log(Tool, Lines, Repo, Number),
   {ok, [ExtraMessage | Messages], DetailsUrl}.
 
-
 -spec catch_error_source(Output::string(),
                          ExitStatus::integer(),
                          Tool::tool(),
@@ -362,6 +371,8 @@ extract_errors([Line|Lines], Regex, Errors) ->
   extract_errors(Lines, Regex, NewErrors).
 
 -spec error_source(Lines::[binary()], Tool::tool()) -> tool() | unknown.
+error_source(_Lines, xref = Tool) -> Tool;
+error_source(_Lines, elvis = Tool) -> Tool;
 error_source(Lines, Tool) ->
   LastLines = lists:sublist(lists:reverse(Lines), 3),
   Regexes = ["make.*?[:] [*][*][*] [[][^]]*[]] Error",
@@ -372,6 +383,13 @@ error_source(Lines, Tool) ->
       lists:any(fun(Regex) -> nomatch /= re:run(Line, Regex) end, Regexes)
     end,
   case lists:any(MatchesRegexes, LastLines) of
+    true -> Tool;
+    false -> rebar_regex(Lines, Tool)
+  end.
+
+rebar_regex(Lines, Tool) ->
+  Regex = [".*===> Compilation failed.*"],
+  case lists:any(fun(Line) -> nomatch /= re:run(Line, Regex) end, Lines) of
     true -> Tool;
     false -> unknown
   end.
