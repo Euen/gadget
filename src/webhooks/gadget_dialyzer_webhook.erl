@@ -92,9 +92,9 @@ dialyze_rebar3_project(RepoDir) ->
   run_dialyze(RepoDir, Command). 
 
 run_dialyze(RepoDir, Command) ->
-  ResultFile = filename:join(RepoDir, "gadget-dialyze.result"),
+  ResultFile = filename:join(RepoDir, "gadget_dialyze.result"),
   remove_result_file(ResultFile),
-  Output =
+  CommandOutput =
     try
       gadget_utils:run_command(Command)
     catch
@@ -109,7 +109,14 @@ run_dialyze(RepoDir, Command) ->
         throw(Error)
     end,
   case filelib:is_regular(ResultFile) of
-    false -> throw({error, Output});
+    false ->
+      _ = lager:warning(
+        "Couldn't process PR - It's Not a regular file: ~p~nParams: ~p~nStack: ~p",
+        [ ResultFile
+        , [RepoDir]
+        , erlang:get_stacktrace()
+        ]),
+      throw({error, {status, 1, ["It's Not a regular file: ",CommandOutput]}});
     true ->
       case file:consult(ResultFile) of
         {ok, Results} ->
@@ -121,12 +128,28 @@ run_dialyze(RepoDir, Command) ->
               [File | Warnings] = string:tokens(binary_to_list(FileContents), "\n"),
               lager:critical("File -> ~p", [File]),
               lager:critical("Warnings -> ~p", [Warnings]),
-              Warnings;
+              CleanWarnings = tl(lists:reverse(Warnings)),
+              Fun =
+               fun(Warning) ->
+                  [LineNumber | _Tail] = string:tokens(Warning, " :"),
+                  Number = list_to_integer(LineNumber),
+                  #{file => File, number => Number, text => Warning}
+               end,
+              lists:map(Fun, CleanWarnings);
             false ->
               [#{file => <<>>, number => 0, text => FileContents}]
           end
       end
   end.
+
+-spec format_rebar3_output(string(), list(), list()) -> [map()].
+%% We disscard the last warning -> ".* Warnings occured running dialyzer*"
+format_rebar3_output(_File, [_Warning], Acc) -> Acc;
+format_rebar3_output(File, [Warning| Warnings], Acc) ->
+  [LineNumber | FileContents] = string:tokens(Warning, " :"),
+  Number = list_to_integer(LineNumber),
+  Result = [Acc | #{file => File, number => Number, text => FileContents}],
+  format_rebar3_output(File, Warnings, Result).
 
 generate_comment(RepoDir, Warning = {_, {Filename, Line}, _}) ->
   #{ file   => re:replace(Filename, [$^ | RepoDir], "", [{return, binary}])

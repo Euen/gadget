@@ -28,7 +28,7 @@
                      number => pos_integer(),
                      text   => binary()
                     }.
--type webhook_info() :: #{ tool => atom()
+-type webhook_info() :: #{ tool => tool()
                          , mod => atom()
                          , name => string()
                          , context => string()
@@ -405,7 +405,9 @@ error_source(Lines, Tool) ->
   LastLines = lists:sublist(lists:reverse(Lines), 3),
   Regexes = ["make.*?[:] [*][*][*] [[][^]]*[]] Error",
              "ERROR[:] compile failed",
-             "Compiling .* failed$"],
+             "Compiling .* failed$",
+             "Dialyzer works only for *",
+             "Not * found"],
   MatchesRegexes =
     fun(Line) ->
       lists:any(fun(Regex) -> nomatch /= re:run(Line, Regex) end, Regexes)
