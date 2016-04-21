@@ -2,6 +2,10 @@ include Makefile
 
 DIALYZER_DIRS ?= --src -r src
 
+PROJECT ?= $(notdir $(CURDIR))
+PROJECT := $(strip $(PROJECT))
+DIALYZER_PLT ?= $(CURDIR)/.$(PROJECT).plt
+
 gadget-plt:
 	@(make plt) || \
 	if [ ! -f '$(DIALYZER_PLT)' ]; then \
@@ -12,6 +16,7 @@ gadget-plt:
 		(exit 0); \
 	fi
 
+
 ifneq ($(wildcard $(DIALYZER_PLT)),)
 gadget-dialyze:
 else
@@ -20,3 +25,9 @@ endif
 	$(gen_verbose) dialyzer --no_native --no_check_plt --raw --quiet \
 		$(DIALYZER_OPTS/--verbose/) $(DIALYZER_DIRS) > gadget-dialyze.result; \
 		echo "ok"
+
+gadget-rebar-plt: 
+	@./rebar build_plt
+
+gadget-rebar-dialyze: 
+	@./rebar check_plt

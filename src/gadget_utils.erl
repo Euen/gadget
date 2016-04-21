@@ -20,6 +20,9 @@
         , report_error/6
         , catch_error_source/6
         , extract_errors/1
+        , build_tool_type/1
+        , default_verbosity_make/0
+        , default_verbosity_rebar/0
         ]).
 
 -type comment() :: #{file   => string(),
@@ -162,11 +165,7 @@ rebarize_project(RepoDir, Verbosity) ->
   case RebarIncluded of
     true ->
       Rebar = filename:join(RepoDir, "rebar"),
-      VerbOption =
-        case Verbosity of
-          verbose -> " --verbose";
-          silent -> ""
-        end,
+      VerbOption = rebar_verbosity(Verbosity),
       % Compiles everything (deps and app).
       _ = run_command(["cd ", RepoDir, "; ",
                        Rebar, VerbOption, " get-deps compile"]),
@@ -176,17 +175,39 @@ rebarize_project(RepoDir, Verbosity) ->
                    Rebar, " skip_deps=true clean compile"]);
     false ->
       Rebar3Included = filelib:is_file(filename:join(RepoDir, "rebar3")),
-      VerbOption =
-        case Verbosity of
-          verbose -> " DEBUG=1 TERM=dumb ";
-          silent  -> ""
-        end,
+      VerbOption = rebar3_verbosity(Verbosity),
       Rebar =
         case Rebar3Included of
           true -> filename:join(RepoDir, "rebar3");
           false -> filename:absname("deps/rebar/rebar3")
         end,
       run_command(["cd ", RepoDir, "; ", VerbOption, Rebar, " compile"])
+  end.
+
+default_verbosity_make() ->
+  Verbosity = application:get_env(gadget, default_verbosity, silent),
+  make_verbosity(Verbosity).
+
+default_verbosity_rebar() ->
+  Verbosity =  application:get_env(gadget, default_verbosity, silent),
+  rebar_verbosity(Verbosity).
+
+make_verbosity(Verbosity) ->
+  case Verbosity of
+    verbose -> "V=2 ";
+    silent -> ""
+  end.
+
+rebar_verbosity(Verbosity) ->
+  case Verbosity of
+     verbose -> " --verbose";
+     silent -> ""
+  end.
+
+rebar3_verbosity(Verbosity) ->
+  case Verbosity of
+    verbose -> " DEBUG=1 TERM=dumb ";
+    silent  -> ""
   end.
 
 %% @doc generates egithub_webhook:messages from a list of comments
@@ -392,4 +413,19 @@ rebar_regex(Lines, Tool) ->
   case lists:any(fun(Line) -> nomatch /= re:run(Line, Regex) end, Lines) of
     true -> Tool;
     false -> unknown
+  end.
+
+-spec build_tool_type(file:name_all()) -> rebar | makefile.
+build_tool_type(RepoDir) ->
+  case filelib:is_regular(filename:join(RepoDir, "rebar.config")) of
+    true -> rebar;
+    false ->
+      case filelib:is_regular(filename:join(RepoDir, "erlang.mk")) of
+        true ->
+          makefile;
+        false ->
+          throw({error,
+                      {status, 1, "Not rebar.config nor erlang.mk found"}})
+
+      end
   end.

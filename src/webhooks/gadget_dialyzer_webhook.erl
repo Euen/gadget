@@ -43,17 +43,20 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
 process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
-    case filelib:is_regular(filename:join(RepoDir, "erlang.mk")) of
-      false -> {error, "Only erlang.mk based repos can be dialyzed"};
-      true ->
-        _ = gadget_utils:compile_project(RepoDir, silent),
-        _ = build_plt(RepoDir),
-        Comments = dialyze_project(RepoDir),
-        Messages =
-          gadget_utils:messages_from_comments(
-            "Dialyzer", Comments, GithubFiles),
-        {ok, Messages}
-    end
+    BuildTool = gadget_utils:build_tool_type(RepoDir),
+    _ = gadget_utils:compile_project(RepoDir, silent),
+    Messages =
+      case BuildTool of
+        rebar -> 
+          _ = build_plt_rebar(RepoDir),
+          Comments = dialyze_rebar_project(RepoDir),
+          messages_from_dialyzer(Comments, GithubFiles);
+        makefile ->
+          _ = build_plt(RepoDir),
+          Comments = dialyze_make_project(RepoDir),
+          messages_from_dialyzer(Comments, GithubFiles)
+      end,
+    {ok, Messages}
   catch
     _:{error, {status, ExitStatus, Output}} ->
       gadget_utils:catch_error_source( Output
@@ -76,18 +79,32 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   end.
 
 build_plt(RepoDir) ->
-  GadgetMk = filename:absname(filename:join(priv_dir(), "gadget.mk")),
-  VerbOption = default_verbosity(),
-  Command =
-    ["cd ", RepoDir, "; ", VerbOption, "make -f ", GadgetMk, " gadget-plt"],
+  VerbOption = gadget_utils:default_verbosity_make(),
+  Command = build_commands(RepoDir, VerbOption, " gadget-plt"),
   gadget_utils:run_command(Command).
 
-dialyze_project(RepoDir) ->
-  GadgetMk =
-    filename:absname(filename:join(priv_dir(), "gadget.mk")),
-  VerbOption = default_verbosity(),
-  Command =
-    ["cd ", RepoDir, "; ", VerbOption, "make -f ", GadgetMk, " gadget-dialyze"],
+build_plt_rebar(RepoDir) ->
+  VerbOption = gadget_utils:default_verbosity_rebar(),
+  Command = build_commands(RepoDir, VerbOption, " gadget-rebar-plt"),
+  gadget_utils:run_command(Command).
+
+dialyze_make_project(RepoDir) ->
+  Command = command_makefile(RepoDir),
+  run_dialyze(RepoDir, Command).
+
+dialyze_rebar_project(RepoDir) ->
+  Command = command_rebar(RepoDir),
+  run_dialyze(RepoDir, Command). 
+
+command_makefile(RepoDir) ->
+  VerbOption = gadget_utils:default_verbosity_make(),
+  build_commands(RepoDir, VerbOption, " gadget-dialyze").
+
+command_rebar(RepoDir) ->
+  VerbOption = gadget_utils:default_verbosity_rebar(),
+  build_commands(RepoDir, VerbOption, " gadget-rebar-dialyze").
+
+run_dialyze(RepoDir, Command) ->
   Output = gadget_utils:run_command(Command),
   ResultFile = filename:join(RepoDir, "gadget-dialyze.result"),
   case filelib:is_regular(ResultFile) of
@@ -119,8 +136,9 @@ priv_dir() ->
     Dir -> Dir
   end.
 
-default_verbosity() ->
-  case application:get_env(gadget, default_verbosity, silent) of
-    verbose -> "V=2 ";
-    silent -> ""
-  end.
+build_commands(RepoDir, VerbOpt, Rule) ->
+  GadgetMk = filename:absname(filename:join(priv_dir(), "gadget.mk")),
+  ["cd ", RepoDir, "; ", VerbOpt, "make -f ", GadgetMk, " ", Rule].
+
+messages_from_dialyzer(Comments, GithubFiles) ->
+  gadget_utils:messages_from_comments("Dialyzer", Comments, GithubFiles).
