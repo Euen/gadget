@@ -50,7 +50,6 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
               xref_project(RepoDir)
           end
       end,
-    ct:pal("Comments -> ~p", [Comments]),
     Messages =
       gadget_utils:messages_from_comments("Xref", Comments, GithubFiles),
     {ok, Messages}
@@ -89,7 +88,8 @@ xref_project(RepoDir) ->
         , [RepoDir]
         , erlang:get_stacktrace()
         ]),
-      throw({error, {status, 1, Error}})
+      Stacktrace = ktn_debug:ppst(erlang:get_stacktrace(),
+      throw({error, {status, 1, Stacktrace}})
   after
     stop_node(RepoNode)
   end.
@@ -119,7 +119,6 @@ run_xref(RepoNode) ->
   rpc:call(RepoNode, xref_runner, check, []).
 
 generate_comment(RepoDir, XrefWarning) ->
-  ct:pal("XrefWarning ~p", [XrefWarning]),
   #{ filename := Filename
    , line     := Line
    , source   := Source
