@@ -88,7 +88,7 @@ xref_project(RepoDir) ->
         , [RepoDir]
         , erlang:get_stacktrace()
         ]),
-      Stacktrace = ktn_debug:ppst(erlang:get_stacktrace(),
+      Stacktrace = ktn_debug:ppst(erlang:get_stacktrace()),
       throw({error, {status, 1, Stacktrace}})
   after
     stop_node(RepoNode)

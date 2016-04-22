@@ -21,8 +21,7 @@
         , catch_error_source/6
         , extract_errors/1
         , build_tool_type/1
-        , default_verbosity_make/0
-        , default_verbosity_rebar/0
+        , default_verbosity/1
         ]).
 
 -type comment() :: #{file   => string(),
@@ -39,6 +38,8 @@
                       , hook_id => binary()
                       }.
 -type tool() :: xref | elvis | compiler | dialyzer.
+-type buildtool() :: makefile | rebar3.
+
 -export_type([webhook_info/0, comment/0, tool_info/0, tool/0]).
 
 
@@ -141,10 +142,10 @@ unique_id() ->
 -spec compile_project(file:name_all(), verbose | silent) -> [string()].
 compile_project(RepoDir, Verbosity) ->
   Output =
-    case filelib:is_regular(filename:join(RepoDir, "rebar.config")) of
+    case exists_file_in_repo(RepoDir, "rebar.config") of
       true -> rebarize_project(RepoDir, Verbosity);
       false ->
-        case filelib:is_regular(filename:join(RepoDir, "Makefile")) of
+        case exists_file_in_repo(RepoDir, "Makefile") of
           true -> make_project(RepoDir, Verbosity);
           false ->
             _ = lager:warning(
@@ -161,7 +162,7 @@ make_project(RepoDir, silent) -> run_command(["cd ", RepoDir, "; make"]).
 
 rebarize_project(RepoDir, Verbosity) ->
   % If rebar is included in the repo, use it.
-  RebarIncluded = filelib:is_file(filename:join(RepoDir, "rebar")),
+  RebarIncluded = exists_file_in_repo(RepoDir, "rebar"),
   case RebarIncluded of
     true ->
       Rebar = filename:join(RepoDir, "rebar"),
@@ -174,23 +175,29 @@ rebarize_project(RepoDir, Verbosity) ->
       run_command(["cd ", RepoDir, "; ",
                    Rebar, " skip_deps=true clean compile"]);
     false ->
-      Rebar3Included = filelib:is_file(filename:join(RepoDir, "rebar3")),
       VerbOption = rebar3_verbosity(Verbosity),
-      Rebar =
-        case Rebar3Included of
-          true -> filename:join(RepoDir, "rebar3");
-          false -> filename:absname("deps/rebar/rebar3")
-        end,
+      Rebar = rebar_command_path(RepoDir),
       run_command(["cd ", RepoDir, "; ", VerbOption, Rebar, " compile"])
   end.
 
-default_verbosity_make() ->
-  Verbosity = application:get_env(gadget, default_verbosity, silent),
-  make_verbosity(Verbosity).
+rebar_command_path(RepoDir) ->
+  Rebar3Included = exists_file_in_repo(RepoDir, "rebar3"),
+  case Rebar3Included of
+    true -> filename:join(RepoDir, "rebar3");
+    false -> filename:absname("deps/rebar/rebar3")
+  end.
 
-default_verbosity_rebar() ->
-  Verbosity =  application:get_env(gadget, default_verbosity, silent),
-  rebar_verbosity(Verbosity).
+-spec default_verbosity(makefile | rebar | rebar3) -> string().
+default_verbosity(BuildTool) ->
+  Verbosity = application:get_env(gadget, default_verbosity, silent),
+  case BuildTool of
+    makefile ->
+      make_verbosity(Verbosity);
+    rebar ->
+      rebar_verbosity(Verbosity);
+    rebar3 ->
+     rebar3_verbosity(Verbosity)
+  end.
 
 make_verbosity(Verbosity) ->
   case Verbosity of
@@ -206,7 +213,7 @@ rebar_verbosity(Verbosity) ->
 
 rebar3_verbosity(Verbosity) ->
   case Verbosity of
-    verbose -> " DEBUG=1 TERM=dumb ";
+    verbose -> " DEBUG=1 TERM=dumb QUIET=1 ";
     silent  -> ""
   end.
 
@@ -415,17 +422,21 @@ rebar_regex(Lines, Tool) ->
     false -> unknown
   end.
 
--spec build_tool_type(file:name_all()) -> rebar | makefile.
+-spec build_tool_type(file:name_all()) -> buildtool().
 build_tool_type(RepoDir) ->
-  case filelib:is_regular(filename:join(RepoDir, "rebar.config")) of
-    true -> rebar;
+  ErlangMkIncluded = exists_file_in_repo(RepoDir, "erlang.mk"),
+  case  ErlangMkIncluded of
+    true -> makefile;
     false ->
-      case filelib:is_regular(filename:join(RepoDir, "erlang.mk")) of
-        true ->
-          makefile;
-        false ->
-          throw({error,
-                      {status, 1, "Not rebar.config nor erlang.mk found"}})
-
+      RebarConfigIncluded = exists_file_in_repo(RepoDir, "rebar.config"),
+      case  RebarConfigIncluded of
+        true -> rebar3;
+        false -> throw(
+                   {error, {status, 1, "Not rebar.config nor erlang.mk found"}}
+                 )
       end
   end.
+
+-spec exists_file_in_repo(file:name_all(), string()) -> boolean().
+exists_file_in_repo(RepoDir, FileName) ->
+  filelib:is_file(filename:join(RepoDir, FileName)).

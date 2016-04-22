@@ -45,17 +45,14 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
     BuildTool = gadget_utils:build_tool_type(RepoDir),
     _ = gadget_utils:compile_project(RepoDir, silent),
-    Messages =
+    Comments =
       case BuildTool of
-        rebar -> 
-          _ = build_plt_rebar(RepoDir),
-          Comments = dialyze_rebar_project(RepoDir),
-          messages_from_dialyzer(Comments, GithubFiles);
         makefile ->
-          _ = build_plt(RepoDir),
-          Comments = dialyze_make_project(RepoDir),
-          messages_from_dialyzer(Comments, GithubFiles)
-      end,
+          dialyze_make_project(RepoDir);
+        rebar3   -> 
+          dialyze_rebar3_project(RepoDir)
+       end,
+    Messages = messages_from_dialyzer(Comments, GithubFiles),
     {ok, Messages}
   catch
     _:{error, {status, ExitStatus, Output}} ->
@@ -78,35 +75,39 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
     gadget_utils:ensure_dir_deleted(RepoDir)
   end.
 
-build_plt(RepoDir) ->
-  VerbOption = gadget_utils:default_verbosity_make(),
-  Command = build_commands(RepoDir, VerbOption, " gadget-plt"),
-  gadget_utils:run_command(Command).
-
-build_plt_rebar(RepoDir) ->
-  VerbOption = gadget_utils:default_verbosity_rebar(),
-  Command = build_commands(RepoDir, VerbOption, " gadget-rebar-plt"),
+build_make_plt(VerbOption, RepoDir) ->
+  PltCommand = "gadget-plt",
+  Command = build_makefile_commands(RepoDir, VerbOption, PltCommand),
   gadget_utils:run_command(Command).
 
 dialyze_make_project(RepoDir) ->
-  Command = command_makefile(RepoDir),
-  run_dialyze(RepoDir, Command).
-
-dialyze_rebar_project(RepoDir) ->
-  Command = command_rebar(RepoDir),
+  VerbOption = gadget_utils:default_verbosity(makefile),
+  build_make_plt(VerbOption, RepoDir),
+  DialyzeCommand = "gadget-dialyze",
+  Command = build_makefile_commands(RepoDir, VerbOption, DialyzeCommand),
   run_dialyze(RepoDir, Command). 
 
-command_makefile(RepoDir) ->
-  VerbOption = gadget_utils:default_verbosity_make(),
-  build_commands(RepoDir, VerbOption, " gadget-dialyze").
-
-command_rebar(RepoDir) ->
-  VerbOption = gadget_utils:default_verbosity_rebar(),
-  build_commands(RepoDir, VerbOption, " gadget-rebar-dialyze").
+dialyze_rebar3_project(RepoDir) ->
+  Command = build_rebar3_commands(RepoDir),
+  run_dialyze(RepoDir, Command). 
 
 run_dialyze(RepoDir, Command) ->
-  Output = gadget_utils:run_command(Command),
   ResultFile = filename:join(RepoDir, "gadget-dialyze.result"),
+  remove_result_file(ResultFile),
+  Output =
+    try
+      gadget_utils:run_command(Command)
+    catch
+      % Since rebar3 adds an ugly warning counter at the end of the warnings,
+      % it makes the command execution to exit with `ExitStatus=1', so we
+      % ignore that exception and return it as the output for the last command.
+      _:{error, {status, 1, []}} = Error ->
+        Error;
+      _:Error ->
+        % If it doesn't fit the match before, it's not the exception we are
+        % looking for, so we re-throw it.
+        throw(Error)
+    end,
   case filelib:is_regular(ResultFile) of
     false -> throw({error, Output});
     true ->
@@ -115,7 +116,15 @@ run_dialyze(RepoDir, Command) ->
           [generate_comment(RepoDir, Result) || Result <- Results];
         {error, _Error} -> % parse error: the text is the error description
           {ok, FileContents} = file:read_file(ResultFile),
-          [#{file => <<>>, number => 0, text => FileContents}]
+          case is_rebar3_output(FileContents) of
+            true ->
+              [File | Warnings] = string:tokens(binary_to_list(FileContents), "\n"),
+              lager:critical("File -> ~p", [File]),
+              lager:critical("Warnings -> ~p", [Warnings]),
+              Warnings;
+            false ->
+              [#{file => <<>>, number => 0, text => FileContents}]
+          end
       end
   end.
 
@@ -136,7 +145,34 @@ priv_dir() ->
     Dir -> Dir
   end.
 
-build_commands(RepoDir, VerbOpt, Rule) ->
+build_rebar3_commands(RepoDir) ->
+% `TERM=dumb' means that our shell doesn't have colors capability.
+% For more info about `TERM' please check
+% here https://en.wikipedia.org/wiki/Termcap .
+% Here is what `rebar3' uses to check color capability
+% https://github.com/project-fifo/cf/blob/master/src/cf_term.erl
+  [ "cd "
+  , RepoDir
+  , "; TERM=dumb QUIET=1 "
+  , "rebar3 "
+  , "dialyzer > gadget_dialyze.result"].
+
+
+remove_result_file(ResultFile) ->
+  case filelib:is_regular(ResultFile) of
+    true -> file:delete(ResultFile);
+    false -> ok
+  end.
+
+is_rebar3_output(FileContents) ->
+  ContentList = string:tokens(binary_to_list(FileContents), "\n"),
+  LastLine = lists:last(ContentList),
+  case re:run(LastLine, ".* Warnings occured running dialyzer*") of
+    nomatch -> false;
+    {match, _Captured} -> true
+  end.
+
+build_makefile_commands(RepoDir, VerbOpt, Rule) ->
   GadgetMk = filename:absname(filename:join(priv_dir(), "gadget.mk")),
   ["cd ", RepoDir, "; ", VerbOpt, "make -f ", GadgetMk, " ", Rule].
 
