@@ -51,7 +51,7 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
           dialyze_make_project(RepoDir);
         rebar3   ->
           dialyze_rebar3_project(RepoDir)
-       end,
+      end,
     Messages = messages_from_dialyzer(Comments, GithubFiles),
     {ok, Messages}
   catch
@@ -82,7 +82,7 @@ build_make_plt(VerbOption, RepoDir) ->
 
 dialyze_make_project(RepoDir) ->
   VerbOption = gadget_utils:default_verbosity(makefile),
-  build_make_plt(VerbOption, RepoDir),
+  _ = build_make_plt(VerbOption, RepoDir),
   DialyzeCommand = "gadget-dialyze",
   Command = build_makefile_commands(RepoDir, VerbOption, DialyzeCommand),
   run_dialyze(RepoDir, Command).
@@ -93,7 +93,7 @@ dialyze_rebar3_project(RepoDir) ->
 
 run_dialyze(RepoDir, Command) ->
   ResultFile = filename:join(RepoDir, "gadget_dialyze.result"),
-  remove_result_file(ResultFile),
+  _ = file:delete(ResultFile),
   CommandOutput =
     try
       gadget_utils:run_command(Command)
@@ -120,24 +120,31 @@ run_dialyze(RepoDir, Command) ->
     true ->
       case file:consult(ResultFile) of
         {ok, Results} ->
-          [generate_comment(RepoDir, Result) || Result <- Results];
-        {error, _Error} -> % parse error: the text is the error description
-          {ok, FileContents} = file:read_file(ResultFile),
-          case is_rebar3_output(FileContents) of
-            true ->
-              ListContents = binary_to_list(FileContents),
-              ParsedContents = string:tokens(ListContents, "\n"),
-              %% We remove the last element because always is
-              %% "===> Warnings occured running dialyzer: *"
-              CleanContents = lists:reverse(tl(lists:reverse(ParsedContents))),
-              Warnings = gadget_utils:extract_errors(CleanContents),
-              ParsedComments = trim_warnings(CleanContents, length(Warnings)),
-              Comments = gadget_utils:extract_comments(ParsedComments),
-              Warnings ++ Comments;
-            false ->
-              throw({error, {status, 1, FileContents}})
-          end
+          generate_makefile_comments(RepoDir, Results);
+        {error, _Error} ->
+          % parse error: the text is the error description
+          generate_rebar3_comments(ResultFile)
       end
+  end.
+
+generate_makefile_comments(RepoDir, Results) ->
+  [generate_comment(RepoDir, Result) || Result <- Results].
+
+generate_rebar3_comments(ResultFile) ->
+  {ok, FileContents} = file:read_file(ResultFile),
+  case is_rebar3_output(FileContents) of
+    true ->
+      ListContents = binary_to_list(FileContents),
+      ParsedContents = string:tokens(ListContents, "\n"),
+      %% We remove the last element because always is
+      %% "===> Warnings occured running dialyzer: *"
+      CleanContents = lists:reverse(tl(lists:reverse(ParsedContents))),
+      Warnings = gadget_utils:extract_errors(CleanContents),
+      ParsedComments = trim_warnings(CleanContents, length(Warnings)),
+      Comments = gadget_utils:extract_comments(ParsedComments),
+      Warnings ++ Comments;
+    false ->
+      throw({error, {status, 1, FileContents}})
   end.
 
 trim_warnings(ParsedContents, LengthWarnings) ->
@@ -161,30 +168,21 @@ priv_dir() ->
   end.
 
 build_rebar3_commands(RepoDir) ->
-% `TERM=dumb' means that our shell doesn't have colors capability.
-% For more info about `TERM' please check
-% here https://en.wikipedia.org/wiki/Termcap .
-% Here is what `rebar3' uses to check color capability
-% https://github.com/project-fifo/cf/blob/master/src/cf_term.erl
+  % `TERM=dumb' means that our shell doesn't have colors capability.
+  % For more info about `TERM' please check
+  % here https://en.wikipedia.org/wiki/Termcap .
+  % Here is what `rebar3' uses to check color capability
+  % https://github.com/project-fifo/cf/blob/master/src/cf_term.erl
   [ "cd "
   , RepoDir
   , "; TERM=dumb QUIET=1 "
   , "rebar3 "
   , "dialyzer > gadget_dialyze.result"].
 
-remove_result_file(ResultFile) ->
-  case filelib:is_regular(ResultFile) of
-    true -> file:delete(ResultFile);
-    false -> ok
-  end.
-
 is_rebar3_output(FileContents) ->
   ContentList = string:tokens(binary_to_list(FileContents), "\n"),
   LastLine = lists:last(ContentList),
-  case re:run(LastLine, ".* Warnings occured running dialyzer*") of
-    nomatch -> false;
-    {match, _Captured} -> true
-  end.
+  nomatch /= re:run(LastLine, ".* Warnings occured running dialyzer*").
 
 build_makefile_commands(RepoDir, VerbOpt, Rule) ->
   GadgetMk = filename:absname(filename:join(priv_dir(), "gadget.mk")),

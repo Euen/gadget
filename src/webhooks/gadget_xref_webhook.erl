@@ -11,13 +11,13 @@
         [egithub_webhook:file()]) ->
         {ok, [egithub_webhook:message()]} | {error, term()}.
 handle_pull_request(Cred, ReqData, GithubFiles) ->
-  #{ <<"repository">> := Repository
+  #{ <<"repository">>   := Repository
    , <<"pull_request">> := PR
-   , <<"number">> := Number
+   , <<"number">>       := Number
    } = ReqData,
   #{<<"full_name">> := RepoName} = Repository,
   #{ <<"head">> :=
-      #{ <<"ref">> := Branch
+      #{ <<"ref">>  := Branch
        , <<"repo">> := #{<<"clone_url">> := GitUrl}
        }
    } = PR,
@@ -38,18 +38,10 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
     _ = gadget_utils:compile_project(RepoDir, silent),
-    Comments =
-      case filelib:is_regular(filename:join(RepoDir, "rebar.config")) of
-        true -> xref_project(RepoDir);
-        false ->
-          case filelib:is_regular(filename:join(RepoDir, "erlang.mk")) of
-            false ->
-              throw({error,
-                          {status, 1, "Not rebar.config nor erlang.mk found"}});
-            true ->
-              xref_project(RepoDir)
-          end
-      end,
+    %% We waiting for a exception from build_tool_type/1 when the repository is
+    %% not rebar3 or erlang.mk type.
+    _BuildTool = gadget_utils:build_tool_type(RepoDir),
+    Comments = xref_project(RepoDir),
     Messages =
       gadget_utils:messages_from_comments("Xref", Comments, GithubFiles),
     {ok, Messages}

@@ -177,11 +177,11 @@ rebarize_project(RepoDir, Verbosity) ->
                    Rebar, " skip_deps=true clean compile"]);
     false ->
       VerbOption = rebar3_verbosity(Verbosity),
-      Rebar = rebar_command_path(RepoDir),
+      Rebar = rebar3_command_path(RepoDir),
       run_command(["cd ", RepoDir, "; ", VerbOption, Rebar, " compile"])
   end.
 
-rebar_command_path(RepoDir) ->
+rebar3_command_path(RepoDir) ->
   Rebar3Included = exists_file_in_repo(RepoDir, "rebar3"),
   case Rebar3Included of
     true -> filename:join(RepoDir, "rebar3");
@@ -203,7 +203,7 @@ default_verbosity(BuildTool) ->
 make_verbosity(Verbosity) ->
   case Verbosity of
     verbose -> "V=2 ";
-    silent -> ""
+    silent  -> ""
   end.
 
 rebar_verbosity(Verbosity) ->
@@ -215,7 +215,7 @@ rebar_verbosity(Verbosity) ->
 rebar3_verbosity(Verbosity) ->
   case Verbosity of
     verbose -> " DEBUG=1 TERM=dumb QUIET=1 ";
-    silent  -> ""
+    silent  -> " TERM=dumb "
   end.
 
 %% @doc generates egithub_webhook:messages from a list of comments
@@ -379,7 +379,7 @@ catch_error_source(Output, ExitStatus, Tool, GithubFiles, RepoName, Number) ->
       report_error(Tool, Messages, RepoName, ExitStatus, Output, Number)
   end.
 
--spec extract_errors(Lines::[binary()]) -> [map()] | [].
+-spec extract_errors(Lines ::[list()]) -> [map()].
 extract_errors(Lines) ->
   {ok, Regex} = re:compile(<<"(.+):([0-9]*): (.+)">>),
   extract_errors(Lines, Regex, []).
@@ -405,23 +405,23 @@ extract_errors([Line|Lines], Regex, Errors) ->
     end,
   extract_errors(Lines, Regex, NewErrors).
 
--spec extract_comments(list()) -> list().
+-spec extract_comments(list()) -> [map()].
 extract_comments(Lines) ->
- {ok, Regex} = re:compile(<<"(\s)([0-9]*): (.+)$">>),
- extract_comments(Lines, Regex, [], undefined).
+  {ok, Regex} = re:compile(<<"(\s)([0-9]*): (.+)$">>),
+  extract_comments(Lines, Regex, [], undefined).
 
 extract_comments([], _Regex, Errors, _File) -> Errors;
 extract_comments([Line | Lines], Regex, Errors, File) ->
- case re:run(Line, Regex, [{capture, [2,3], list}]) of
-   {match, [LineNumber, Comments]} ->
-     Number = list_to_integer(LineNumber),
-     NewError = #{file => File, number => Number, text => Comments},
-     extract_comments(Lines, Regex, [NewError | Errors], File);
-   nomatch ->
-     %% Line contains the file with dialyze comments.
-     %% the next itmes are comments related with this line until the next File.
-     extract_comments(Lines, Regex, Errors, Line)
-   end.
+  case re:run(Line, Regex, [{capture, [2,3], list}]) of
+    {match, [LineNumber, Comments]} ->
+      Number = list_to_integer(LineNumber),
+      NewError = #{file => File, number => Number, text => Comments},
+      extract_comments(Lines, Regex, [NewError | Errors], File);
+    nomatch ->
+      %% Line contains the file with dialyze comments.
+      %% the next itmes are comments related with this line until the next File.
+      extract_comments(Lines, Regex, Errors, Line)
+  end.
 
 -spec error_source(Lines::[binary()], Tool::tool()) -> tool() | unknown.
 error_source(_Lines, xref = Tool) -> Tool;
@@ -444,7 +444,7 @@ error_source(Lines, Tool) ->
   end.
 
 rebar_regex(Lines, Tool) ->
-  Regex = [".*===> Compilation failed.*"],
+  Regex = ".*===> Compilation failed.*",
   case lists:any(fun(Line) -> nomatch /= re:run(Line, Regex) end, Lines) of
     true -> Tool;
     false -> unknown
@@ -460,7 +460,7 @@ build_tool_type(RepoDir) ->
       case  RebarConfigIncluded of
         true -> rebar3;
         false -> throw(
-                   {error, {status, 1, "Not rebar.config nor erlang.mk found"}}
+                   {error, {status, 1, "Not rebar.config or erlang.mk found"}}
                  )
       end
   end.
