@@ -460,7 +460,7 @@ build_tool_type(RepoDir) ->
       case  RebarConfigIncluded of
         true -> rebar3;
         false -> throw(
-                   {error, {status, 1, "Not rebar.config nor erlang.mk found"}}
+                   {error, {status, 1, "Not rebar.config or erlang.mk found"}}
                  )
       end
   end.
