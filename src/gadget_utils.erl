@@ -433,6 +433,7 @@ error_source(Lines, Tool) ->
              "Compiling .* failed$",
              "Dialyzer works only for *",
              "===> Error in dialyzing apps:*",
+             "{badmatch,{error*"
              "Not * found"],
   MatchesRegexes =
     fun(Line) ->
