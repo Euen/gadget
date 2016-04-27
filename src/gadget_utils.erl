@@ -20,6 +20,7 @@
         , report_error/6
         , catch_error_source/6
         , extract_errors/1
+        , extract_comments/1
         , build_tool_type/1
         , default_verbosity/1
         ]).
@@ -252,6 +253,12 @@ messages_from_comment(ToolName, Comment, GithubFiles) ->
       messages_from_comment(FileName, Line, FullText, MatchingFile)
   end.
 
+ends_with(Big, Small) when is_list(Big) ->
+  BigBinary = list_to_binary(Big),
+  ends_with(BigBinary, Small);
+ends_with(Big, Small) when is_list(Small) ->
+  SmallBinary = list_to_binary(Small),
+  ends_with(Big, SmallBinary);
 ends_with(Big, Small) ->
   LBig = erlang:size(Big),
   LSmall = erlang:size(Small),
@@ -398,6 +405,24 @@ extract_errors([Line|Lines], Regex, Errors) ->
     end,
   extract_errors(Lines, Regex, NewErrors).
 
+-spec extract_comments(list()) -> list().
+extract_comments(Lines) ->
+ {ok, Regex} = re:compile(<<"(\s)([0-9]*): (.+)$">>),
+ extract_comments(Lines, Regex, [], undefined).
+
+extract_comments([], _Regex, Errors, _File) -> Errors;
+extract_comments([Line | Lines], Regex, Errors, File) ->
+ case re:run(Line, Regex, [{capture, [2,3], list}]) of
+   {match, [LineNumber, Comments]} ->
+     Number = list_to_integer(LineNumber),
+     NewError = #{file => File, number => Number, text => Comments},
+     extract_comments(Lines, Regex, [NewError | Errors], File);
+   nomatch ->
+     %% Line contains the file with dialyze comments.
+     %% the next itmes are comments related with this line until the next File.
+     extract_comments(Lines, Regex, Errors, Line)
+   end.
+
 -spec error_source(Lines::[binary()], Tool::tool()) -> tool() | unknown.
 error_source(_Lines, xref = Tool) -> Tool;
 error_source(_Lines, elvis = Tool) -> Tool;
@@ -407,6 +432,7 @@ error_source(Lines, Tool) ->
              "ERROR[:] compile failed",
              "Compiling .* failed$",
              "Dialyzer works only for *",
+             "===> Error in dialyzing apps:*",
              "Not * found"],
   MatchesRegexes =
     fun(Line) ->

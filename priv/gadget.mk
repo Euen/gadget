@@ -2,10 +2,6 @@ include Makefile
 
 DIALYZER_DIRS ?= --src -r src
 
-PROJECT ?= $(notdir $(CURDIR))
-PROJECT := $(strip $(PROJECT))
-DIALYZER_PLT ?= $(CURDIR)/.$(PROJECT).plt
-
 gadget-plt:
 	@(make plt) || \
 	if [ ! -f '$(DIALYZER_PLT)' ]; then \

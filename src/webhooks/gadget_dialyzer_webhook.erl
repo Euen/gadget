@@ -49,7 +49,7 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
       case BuildTool of
         makefile ->
           dialyze_make_project(RepoDir);
-        rebar3   -> 
+        rebar3   ->
           dialyze_rebar3_project(RepoDir)
        end,
     Messages = messages_from_dialyzer(Comments, GithubFiles),
@@ -85,11 +85,11 @@ dialyze_make_project(RepoDir) ->
   build_make_plt(VerbOption, RepoDir),
   DialyzeCommand = "gadget-dialyze",
   Command = build_makefile_commands(RepoDir, VerbOption, DialyzeCommand),
-  run_dialyze(RepoDir, Command). 
+  run_dialyze(RepoDir, Command).
 
 dialyze_rebar3_project(RepoDir) ->
   Command = build_rebar3_commands(RepoDir),
-  run_dialyze(RepoDir, Command). 
+  run_dialyze(RepoDir, Command).
 
 run_dialyze(RepoDir, Command) ->
   ResultFile = filename:join(RepoDir, "gadget_dialyze.result"),
@@ -111,12 +111,12 @@ run_dialyze(RepoDir, Command) ->
   case filelib:is_regular(ResultFile) of
     false ->
       _ = lager:warning(
-        "Couldn't process PR - It's Not a regular file: ~p~nParams: ~p~nStack: ~p",
+        "Couldn't process PR - Not a regular file: ~p~nParams: ~p~nStack: ~p",
         [ ResultFile
         , [RepoDir]
         , erlang:get_stacktrace()
         ]),
-      throw({error, {status, 1, ["It's Not a regular file: ",CommandOutput]}});
+      throw({error, {status, 1, ["Not a regular file: ", CommandOutput]}});
     true ->
       case file:consult(ResultFile) of
         {ok, Results} ->
@@ -125,31 +125,23 @@ run_dialyze(RepoDir, Command) ->
           {ok, FileContents} = file:read_file(ResultFile),
           case is_rebar3_output(FileContents) of
             true ->
-              [File | Warnings] = string:tokens(binary_to_list(FileContents), "\n"),
-              lager:critical("File -> ~p", [File]),
-              lager:critical("Warnings -> ~p", [Warnings]),
-              CleanWarnings = tl(lists:reverse(Warnings)),
-              Fun =
-               fun(Warning) ->
-                  [LineNumber | _Tail] = string:tokens(Warning, " :"),
-                  Number = list_to_integer(LineNumber),
-                  #{file => File, number => Number, text => Warning}
-               end,
-              lists:map(Fun, CleanWarnings);
+              ListContents = binary_to_list(FileContents),
+              ParsedContents = string:tokens(ListContents, "\n"),
+              %% We remove the last element because always is
+              %% "===> Warnings occured running dialyzer: *"
+              CleanContents = lists:reverse(tl(lists:reverse(ParsedContents))),
+              Warnings = gadget_utils:extract_errors(CleanContents),
+              ParsedComments = trim_warnings(CleanContents, length(Warnings)),
+              Comments = gadget_utils:extract_comments(ParsedComments),
+              Warnings ++ Comments;
             false ->
-              [#{file => <<>>, number => 0, text => FileContents}]
+              throw({error, {status, 1, FileContents}})
           end
       end
   end.
 
--spec format_rebar3_output(string(), list(), list()) -> [map()].
-%% We disscard the last warning -> ".* Warnings occured running dialyzer*"
-format_rebar3_output(_File, [_Warning], Acc) -> Acc;
-format_rebar3_output(File, [Warning| Warnings], Acc) ->
-  [LineNumber | FileContents] = string:tokens(Warning, " :"),
-  Number = list_to_integer(LineNumber),
-  Result = [Acc | #{file => File, number => Number, text => FileContents}],
-  format_rebar3_output(File, Warnings, Result).
+trim_warnings(ParsedContents, LengthWarnings) ->
+  lists:nthtail(LengthWarnings, ParsedContents).
 
 generate_comment(RepoDir, Warning = {_, {Filename, Line}, _}) ->
   #{ file   => re:replace(Filename, [$^ | RepoDir], "", [{return, binary}])
@@ -179,7 +171,6 @@ build_rebar3_commands(RepoDir) ->
   , "; TERM=dumb QUIET=1 "
   , "rebar3 "
   , "dialyzer > gadget_dialyze.result"].
-
 
 remove_result_file(ResultFile) ->
   case filelib:is_regular(ResultFile) of
