@@ -120,24 +120,31 @@ run_dialyze(RepoDir, Command) ->
     true ->
       case file:consult(ResultFile) of
         {ok, Results} ->
-          [generate_comment(RepoDir, Result) || Result <- Results];
-        {error, _Error} -> % parse error: the text is the error description
-          {ok, FileContents} = file:read_file(ResultFile),
-          case is_rebar3_output(FileContents) of
-            true ->
-              ListContents = binary_to_list(FileContents),
-              ParsedContents = string:tokens(ListContents, "\n"),
-              %% We remove the last element because always is
-              %% "===> Warnings occured running dialyzer: *"
-              CleanContents = lists:reverse(tl(lists:reverse(ParsedContents))),
-              Warnings = gadget_utils:extract_errors(CleanContents),
-              ParsedComments = trim_warnings(CleanContents, length(Warnings)),
-              Comments = gadget_utils:extract_comments(ParsedComments),
-              Warnings ++ Comments;
-            false ->
-              throw({error, {status, 1, FileContents}})
-          end
+          generate_makefile_comments(RepoDir, Results);
+        {error, _Error} -> 
+          % parse error: the text is the error description
+          generate_rebar3_comments(ResultFile)
       end
+  end.
+
+generate_makefile_comments(RepoDir, Results) ->
+  [generate_comment(RepoDir, Result) || Result <- Results].
+
+generate_rebar3_comments(ResultFile) ->
+  {ok, FileContents} = file:read_file(ResultFile),
+  case is_rebar3_output(FileContents) of
+    true ->
+      ListContents = binary_to_list(FileContents),
+      ParsedContents = string:tokens(ListContents, "\n"),
+      %% We remove the last element because always is
+      %% "===> Warnings occured running dialyzer: *"
+      CleanContents = lists:reverse(tl(lists:reverse(ParsedContents))),
+      Warnings = gadget_utils:extract_errors(CleanContents),
+      ParsedComments = trim_warnings(CleanContents, length(Warnings)),
+      Comments = gadget_utils:extract_comments(ParsedComments),
+      Warnings ++ Comments;
+    false ->
+      throw({error, {status, 1, FileContents}})
   end.
 
 trim_warnings(ParsedContents, LengthWarnings) ->
