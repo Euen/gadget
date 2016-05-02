@@ -113,7 +113,7 @@ run_dialyze(RepoDir, Command) ->
       _ = lager:warning(
         "Couldn't process PR - Not a regular file: ~p~nParams: ~p~nStack: ~p",
         [ ResultFile
-        , [RepoDir]
+        , [RepoDir, Command]
         , erlang:get_stacktrace()
         ]),
       throw({error, {status, 1, ["Not a regular file: ", CommandOutput]}});
