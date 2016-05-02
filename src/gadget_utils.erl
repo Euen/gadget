@@ -197,26 +197,17 @@ default_verbosity(BuildTool) ->
     rebar ->
       rebar_verbosity(Verbosity);
     rebar3 ->
-     rebar3_verbosity(Verbosity)
+      rebar3_verbosity(Verbosity)
   end.
 
-make_verbosity(Verbosity) ->
-  case Verbosity of
-    verbose -> "V=2 ";
-    silent  -> ""
-  end.
+make_verbosity(verbose) -> "V=2 ";
+make_verbosity(silent) -> "".
 
-rebar_verbosity(Verbosity) ->
-  case Verbosity of
-     verbose -> " --verbose";
-     silent -> ""
-  end.
+rebar_verbosity(verbose) -> " --verbose";
+rebar_verbosity(silent) -> "".
 
-rebar3_verbosity(Verbosity) ->
-  case Verbosity of
-    verbose -> " DEBUG=1 TERM=dumb QUIET=1 ";
-    silent  -> " TERM=dumb "
-  end.
+rebar3_verbosity(verbose) -> " DEBUG=1 TERM=dumb QUIET=1 ";
+rebar3_verbosity(silent) -> " TERM=dumb ".
 
 %% @doc generates egithub_webhook:messages from a list of comments
 -spec messages_from_comments(string(), [comment()], [egithub_webhook:file()]) ->
@@ -454,11 +445,11 @@ rebar_regex(Lines, Tool) ->
 -spec build_tool_type(file:name_all()) -> buildtool().
 build_tool_type(RepoDir) ->
   ErlangMkIncluded = exists_file_in_repo(RepoDir, "erlang.mk"),
-  case  ErlangMkIncluded of
+  case ErlangMkIncluded of
     true -> makefile;
     false ->
       RebarConfigIncluded = exists_file_in_repo(RepoDir, "rebar.config"),
-      case  RebarConfigIncluded of
+      case RebarConfigIncluded of
         true -> rebar3;
         false -> throw(
                    {error, {status, 1, "Not rebar.config or erlang.mk found"}}
