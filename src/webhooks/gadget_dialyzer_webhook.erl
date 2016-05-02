@@ -136,7 +136,7 @@ generate_rebar3_comments(ResultFile) ->
     true ->
       ListContents = binary_to_list(FileContents),
       ParsedContents = string:tokens(ListContents, "\n"),
-      %% We remove the last element because always is
+      %% We remove the last element because it is always
       %% "===> Warnings occured running dialyzer: *"
       CleanContents = lists:reverse(tl(lists:reverse(ParsedContents))),
       Warnings = gadget_utils:extract_errors(CleanContents),

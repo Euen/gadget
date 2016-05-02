@@ -407,19 +407,19 @@ extract_errors([Line|Lines], Regex, Errors) ->
 
 -spec extract_comments(list()) -> [map()].
 extract_comments(Lines) ->
-  {ok, Regex} = re:compile(<<"(\s)([0-9]*): (.+)$">>),
+  {ok, Regex} = re:compile(<<"\s([0-9]*): (.+)$">>),
   extract_comments(Lines, Regex, [], undefined).
 
 extract_comments([], _Regex, Errors, _File) -> Errors;
 extract_comments([Line | Lines], Regex, Errors, File) ->
-  case re:run(Line, Regex, [{capture, [2,3], list}]) of
+  case re:run(Line, Regex, [{capture, [1, 2], list}]) of
     {match, [LineNumber, Comments]} ->
       Number = list_to_integer(LineNumber),
       NewError = #{file => File, number => Number, text => Comments},
       extract_comments(Lines, Regex, [NewError | Errors], File);
     nomatch ->
       %% Line contains the file with dialyze comments.
-      %% the next itmes are comments related with this line until the next File.
+      %% the next items are comments related with this line until the next File.
       extract_comments(Lines, Regex, Errors, Line)
   end.
 
