@@ -12,11 +12,12 @@ gadget-plt:
 		(exit 0); \
 	fi
 
+
 ifneq ($(wildcard $(DIALYZER_PLT)),)
 gadget-dialyze:
 else
 gadget-dialyze: gadget-plt
 endif
 	$(gen_verbose) dialyzer --no_native --no_check_plt --raw --quiet \
-		$(DIALYZER_OPTS/--verbose/) $(DIALYZER_DIRS) > gadget-dialyze.result; \
+		$(DIALYZER_OPTS/--verbose/) $(DIALYZER_DIRS) > gadget_dialyze.result; \
 		echo "ok"
