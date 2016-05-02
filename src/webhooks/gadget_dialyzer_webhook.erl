@@ -43,17 +43,17 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
 process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
-    case filelib:is_regular(filename:join(RepoDir, "erlang.mk")) of
-      false -> {error, "Only erlang.mk based repos can be dialyzed"};
-      true ->
-        _ = gadget_utils:compile_project(RepoDir, silent),
-        _ = build_plt(RepoDir),
-        Comments = dialyze_project(RepoDir),
-        Messages =
-          gadget_utils:messages_from_comments(
-            "Dialyzer", Comments, GithubFiles),
-        {ok, Messages}
-    end
+    BuildTool = gadget_utils:build_tool_type(RepoDir),
+    _ = gadget_utils:compile_project(RepoDir, silent),
+    Comments =
+      case BuildTool of
+        makefile ->
+          dialyze_make_project(RepoDir);
+        rebar3   ->
+          dialyze_rebar3_project(RepoDir)
+      end,
+    Messages = messages_from_dialyzer(Comments, GithubFiles),
+    {ok, Messages}
   catch
     _:{error, {status, ExitStatus, Output}} ->
       gadget_utils:catch_error_source( Output
@@ -75,32 +75,80 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
     gadget_utils:ensure_dir_deleted(RepoDir)
   end.
 
-build_plt(RepoDir) ->
-  GadgetMk = filename:absname(filename:join(priv_dir(), "gadget.mk")),
-  VerbOption = default_verbosity(),
-  Command =
-    ["cd ", RepoDir, "; ", VerbOption, "make -f ", GadgetMk, " gadget-plt"],
+build_make_plt(VerbOption, RepoDir) ->
+  PltCommand = "gadget-plt",
+  Command = build_makefile_commands(RepoDir, VerbOption, PltCommand),
   gadget_utils:run_command(Command).
 
-dialyze_project(RepoDir) ->
-  GadgetMk =
-    filename:absname(filename:join(priv_dir(), "gadget.mk")),
-  VerbOption = default_verbosity(),
-  Command =
-    ["cd ", RepoDir, "; ", VerbOption, "make -f ", GadgetMk, " gadget-dialyze"],
-  Output = gadget_utils:run_command(Command),
-  ResultFile = filename:join(RepoDir, "gadget-dialyze.result"),
+dialyze_make_project(RepoDir) ->
+  VerbOption = gadget_utils:default_verbosity(makefile),
+  _ = build_make_plt(VerbOption, RepoDir),
+  DialyzeCommand = "gadget-dialyze",
+  Command = build_makefile_commands(RepoDir, VerbOption, DialyzeCommand),
+  run_dialyze(RepoDir, Command).
+
+dialyze_rebar3_project(RepoDir) ->
+  Command = build_rebar3_commands(RepoDir),
+  run_dialyze(RepoDir, Command).
+
+run_dialyze(RepoDir, Command) ->
+  ResultFile = filename:join(RepoDir, "gadget_dialyze.result"),
+  _ = file:delete(ResultFile),
+  CommandOutput =
+    try
+      gadget_utils:run_command(Command)
+    catch
+      % Since rebar3 adds an ugly warning counter at the end of the warnings,
+      % it makes the command execution to exit with `ExitStatus=1', so we
+      % ignore that exception and return it as the output for the last command.
+      _:{error, {status, 1, []}} = Error ->
+        Error;
+      _:Error ->
+        % If it doesn't fit the match before, it's not the exception we are
+        % looking for, so we re-throw it.
+        throw(Error)
+    end,
   case filelib:is_regular(ResultFile) of
-    false -> throw({error, Output});
+    false ->
+      _ = lager:warning(
+        "Couldn't process PR - Not a regular file: ~p~nParams: ~p~nStack: ~p",
+        [ ResultFile
+        , [RepoDir, Command]
+        , erlang:get_stacktrace()
+        ]),
+      throw({error, {status, 1, ["Not a regular file: ", CommandOutput]}});
     true ->
       case file:consult(ResultFile) of
         {ok, Results} ->
-          [generate_comment(RepoDir, Result) || Result <- Results];
-        {error, _Error} -> % parse error: the text is the error description
-          {ok, FileContents} = file:read_file(ResultFile),
-          [#{file => <<>>, number => 0, text => FileContents}]
+          generate_makefile_comments(RepoDir, Results);
+        {error, _Error} ->
+          % parse error: the text is the error description
+          generate_rebar3_comments(ResultFile)
       end
   end.
+
+generate_makefile_comments(RepoDir, Results) ->
+  [generate_comment(RepoDir, Result) || Result <- Results].
+
+generate_rebar3_comments(ResultFile) ->
+  {ok, FileContents} = file:read_file(ResultFile),
+  case is_rebar3_output(FileContents) of
+    true ->
+      ListContents = binary_to_list(FileContents),
+      ParsedContents = string:tokens(ListContents, "\n"),
+      %% We remove the last element because it is always
+      %% "===> Warnings occured running dialyzer: *"
+      CleanContents = lists:reverse(tl(lists:reverse(ParsedContents))),
+      Warnings = gadget_utils:extract_errors(CleanContents),
+      ParsedComments = trim_warnings(CleanContents, length(Warnings)),
+      Comments = gadget_utils:extract_comments(ParsedComments),
+      Warnings ++ Comments;
+    false ->
+      throw({error, {status, 1, FileContents}})
+  end.
+
+trim_warnings(ParsedContents, LengthWarnings) ->
+  lists:nthtail(LengthWarnings, ParsedContents).
 
 generate_comment(RepoDir, Warning = {_, {Filename, Line}, _}) ->
   #{ file   => re:replace(Filename, [$^ | RepoDir], "", [{return, binary}])
@@ -119,8 +167,26 @@ priv_dir() ->
     Dir -> Dir
   end.
 
-default_verbosity() ->
-  case application:get_env(gadget, default_verbosity, silent) of
-    verbose -> "V=2 ";
-    silent -> ""
-  end.
+build_rebar3_commands(RepoDir) ->
+  % `TERM=dumb' means that our shell doesn't have colors capability.
+  % For more info about `TERM' please check
+  % here https://en.wikipedia.org/wiki/Termcap .
+  % Here is what `rebar3' uses to check color capability
+  % https://github.com/project-fifo/cf/blob/master/src/cf_term.erl
+  [ "cd "
+  , RepoDir
+  , "; TERM=dumb QUIET=1 "
+  , "rebar3 "
+  , "dialyzer > gadget_dialyze.result"].
+
+is_rebar3_output(FileContents) ->
+  ContentList = string:tokens(binary_to_list(FileContents), "\n"),
+  LastLine = lists:last(ContentList),
+  nomatch /= re:run(LastLine, ".* Warnings occured running dialyzer*").
+
+build_makefile_commands(RepoDir, VerbOpt, Rule) ->
+  GadgetMk = filename:absname(filename:join(priv_dir(), "gadget.mk")),
+  ["cd ", RepoDir, "; ", VerbOpt, "make -f ", GadgetMk, " ", Rule].
+
+messages_from_dialyzer(Comments, GithubFiles) ->
+  gadget_utils:messages_from_comments("Dialyzer", Comments, GithubFiles).

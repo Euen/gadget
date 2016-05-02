@@ -13,9 +13,10 @@
 handle_pull_request(Cred, ReqData, GithubFiles) ->
   #{ <<"repository">> := Repository
    , <<"pull_request">> := PR
-   , <<"number">> := Number
+   , <<"number">>       := Number
    } = ReqData,
-  #{<<"full_name">> := RepoName} = Repository,
+  #{ <<"full_name">> := RepoName
+   } = Repository,
   #{ <<"head">> :=
       #{ <<"ref">> := Branch
        , <<"repo">> := #{<<"ssh_url">> := GitUrl}
@@ -38,8 +39,13 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
     _ = gadget_utils:compile_project(RepoDir, silent),
+    %% We waiting for a exception from build_tool_type/1 when the repository is
+    %% not rebar3 or erlang.mk type.
+    _BuildTool = gadget_utils:build_tool_type(RepoDir),
     Comments = xref_project(RepoDir),
-    {ok, gadget_utils:messages_from_comments("Xref", Comments, GithubFiles)}
+    Messages =
+      gadget_utils:messages_from_comments("Xref", Comments, GithubFiles),
+    {ok, Messages}
   catch
     _:{error, {status, ExitStatus, Output}} ->
       gadget_utils:catch_error_source( Output
@@ -53,7 +59,7 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
       _ = lager:warning(
         "Couldn't process PR: ~p~nParams: ~p~nStack: ~p",
         [ Error
-        , [RepoDir, RepoName, Branch, GitUrl, GithubFiles]
+        , [RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number]
         , erlang:get_stacktrace()
         ]),
       {error, Error}
@@ -67,6 +73,16 @@ xref_project(RepoDir) ->
     ok = set_cwd(RepoNode, RepoDir),
     XrefWarnings = run_xref(RepoNode),
     [generate_comment(RepoDir, XrefWarning) || XrefWarning <- XrefWarnings]
+  catch
+    _:Error ->
+      _ = lager:warning(
+        "Couldn't process PR: ~p~nParams: ~p~nStack: ~p",
+        [ Error
+        , [RepoDir]
+        , erlang:get_stacktrace()
+        ]),
+      Stacktrace = ktn_debug:ppst(erlang:get_stacktrace()),
+      throw({error, {status, 1, Stacktrace}})
   after
     stop_node(RepoNode)
   end.

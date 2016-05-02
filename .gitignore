@@ -19,3 +19,5 @@ _rel/
 relx
 Mnesia*
 elvis
+_build/
+rebar.lock
