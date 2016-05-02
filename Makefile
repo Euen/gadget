@@ -23,7 +23,7 @@ dep_erlydtl = git https://github.com/erlydtl/erlydtl.git 0.11.1
 # Shotgun 0.2.2 uses cowlib 1.0.2 and cowboy 1.0.4 uses cowlib 1.3.0.
 dep_shotgun = git https://github.com/inaka/shotgun.git 0.2.0
 dep_rebar = git https://github.com/erlang/rebar3.git 3.1.0
-dep_xref_runner = git https://github.com/inaka/xref_runner.git 5e855dc
+dep_xref_runner = git https://github.com/inaka/xref_runner.git 828dd5c
 dep_sumo_db = git https://github.com/inaka/sumo_db.git db463a6b93
 dep_epocxy = git https://github.com/duomark/epocxy.git 1.0.0
 dep_katana = git https://github.com/inaka/erlang-katana.git 0.2.23

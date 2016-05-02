@@ -20,13 +20,16 @@
         , report_error/6
         , catch_error_source/6
         , extract_errors/1
+        , extract_comments/1
+        , build_tool_type/1
+        , default_verbosity/1
         ]).
 
 -type comment() :: #{file   => string(),
                      number => pos_integer(),
                      text   => binary()
                     }.
--type webhook_info() :: #{ tool => atom()
+-type webhook_info() :: #{ tool => tool()
                          , mod => atom()
                          , name => string()
                          , context => string()
@@ -36,6 +39,8 @@
                       , hook_id => binary()
                       }.
 -type tool() :: xref | elvis | compiler | dialyzer.
+-type buildtool() :: makefile | rebar3.
+
 -export_type([webhook_info/0, comment/0, tool_info/0, tool/0]).
 
 
@@ -138,10 +143,10 @@ unique_id() ->
 -spec compile_project(file:name_all(), verbose | silent) -> [string()].
 compile_project(RepoDir, Verbosity) ->
   Output =
-    case filelib:is_regular(filename:join(RepoDir, "rebar.config")) of
+    case exists_file_in_repo(RepoDir, "rebar.config") of
       true -> rebarize_project(RepoDir, Verbosity);
       false ->
-        case filelib:is_regular(filename:join(RepoDir, "Makefile")) of
+        case exists_file_in_repo(RepoDir, "Makefile") of
           true -> make_project(RepoDir, Verbosity);
           false ->
             _ = lager:warning(
@@ -158,15 +163,11 @@ make_project(RepoDir, silent) -> run_command(["cd ", RepoDir, "; make"]).
 
 rebarize_project(RepoDir, Verbosity) ->
   % If rebar is included in the repo, use it.
-  RebarIncluded = filelib:is_file(filename:join(RepoDir, "rebar")),
+  RebarIncluded = exists_file_in_repo(RepoDir, "rebar"),
   case RebarIncluded of
     true ->
       Rebar = filename:join(RepoDir, "rebar"),
-      VerbOption =
-        case Verbosity of
-          verbose -> " --verbose";
-          silent -> ""
-        end,
+      VerbOption = rebar_verbosity(Verbosity),
       % Compiles everything (deps and app).
       _ = run_command(["cd ", RepoDir, "; ",
                        Rebar, VerbOption, " get-deps compile"]),
@@ -175,19 +176,38 @@ rebarize_project(RepoDir, Verbosity) ->
       run_command(["cd ", RepoDir, "; ",
                    Rebar, " skip_deps=true clean compile"]);
     false ->
-      Rebar3Included = filelib:is_file(filename:join(RepoDir, "rebar3")),
-      VerbOption =
-        case Verbosity of
-          verbose -> " DEBUG=1 ";
-          silent  -> ""
-        end,
-      Rebar =
-        case Rebar3Included of
-          true -> filename:join(RepoDir, "rebar3");
-          false -> filename:absname("deps/rebar/rebar3")
-        end,
+      VerbOption = rebar3_verbosity(Verbosity),
+      Rebar = rebar3_command_path(RepoDir),
       run_command(["cd ", RepoDir, "; ", VerbOption, Rebar, " compile"])
   end.
+
+rebar3_command_path(RepoDir) ->
+  Rebar3Included = exists_file_in_repo(RepoDir, "rebar3"),
+  case Rebar3Included of
+    true -> filename:join(RepoDir, "rebar3");
+    false -> filename:absname("deps/rebar/rebar3")
+  end.
+
+-spec default_verbosity(makefile | rebar | rebar3) -> string().
+default_verbosity(BuildTool) ->
+  Verbosity = application:get_env(gadget, default_verbosity, silent),
+  case BuildTool of
+    makefile ->
+      make_verbosity(Verbosity);
+    rebar ->
+      rebar_verbosity(Verbosity);
+    rebar3 ->
+      rebar3_verbosity(Verbosity)
+  end.
+
+make_verbosity(verbose) -> "V=2 ";
+make_verbosity(silent) -> "".
+
+rebar_verbosity(verbose) -> " --verbose";
+rebar_verbosity(silent) -> "".
+
+rebar3_verbosity(verbose) -> " DEBUG=1 TERM=dumb QUIET=1 ";
+rebar3_verbosity(silent) -> " TERM=dumb ".
 
 %% @doc generates egithub_webhook:messages from a list of comments
 -spec messages_from_comments(string(), [comment()], [egithub_webhook:file()]) ->
@@ -210,17 +230,33 @@ messages_from_comment(ToolName, Comment, GithubFiles) ->
    } = Comment,
   MatchingFiles =
     [GithubFile
-     || #{ <<"filename">>  := Filename
+     || #{ <<"filename">>  := FileName
          , <<"status">>    := Status
          } = GithubFile <- GithubFiles
-          , Filename == File
+          , true == ends_with(File, FileName)
           , Status /= <<"deleted">>
     ],
   case MatchingFiles of
     [] -> [];
     [MatchingFile|_] ->
       FullText = format_message(ToolName, Text),
-      messages_from_comment(File, Line, FullText, MatchingFile)
+      #{<<"filename">> := FileName} = MatchingFile,
+      messages_from_comment(FileName, Line, FullText, MatchingFile)
+  end.
+
+ends_with(Big, Small) when is_list(Big) ->
+  BigBinary = list_to_binary(Big),
+  ends_with(BigBinary, Small);
+ends_with(Big, Small) when is_list(Small) ->
+  SmallBinary = list_to_binary(Small),
+  ends_with(Big, SmallBinary);
+ends_with(Big, Small) ->
+  LBig = erlang:size(Big),
+  LSmall = erlang:size(Small),
+  LRest = LBig - LSmall,
+  case Big of
+    <<_:LRest/binary, Small/binary>> -> true;
+    _Other -> false
   end.
 
 messages_from_comment(Filename, 0, Text, File) ->
@@ -314,7 +350,6 @@ report_error( Tool, [#{commit_id := CommitId} | _] = Messages, Repo, ExitStatus
   DetailsUrl = save_status_log(Tool, Lines, Repo, Number),
   {ok, [ExtraMessage | Messages], DetailsUrl}.
 
-
 -spec catch_error_source(Output::string(),
                          ExitStatus::integer(),
                          Tool::tool(),
@@ -335,7 +370,7 @@ catch_error_source(Output, ExitStatus, Tool, GithubFiles, RepoName, Number) ->
       report_error(Tool, Messages, RepoName, ExitStatus, Output, Number)
   end.
 
--spec extract_errors(Lines::[binary()]) -> [map()] | [].
+-spec extract_errors(Lines ::[list()]) -> [map()].
 extract_errors(Lines) ->
   {ok, Regex} = re:compile(<<"(.+):([0-9]*): (.+)">>),
   extract_errors(Lines, Regex, []).
@@ -361,17 +396,67 @@ extract_errors([Line|Lines], Regex, Errors) ->
     end,
   extract_errors(Lines, Regex, NewErrors).
 
+-spec extract_comments(list()) -> [map()].
+extract_comments(Lines) ->
+  {ok, Regex} = re:compile(<<"\s([0-9]*): (.+)$">>),
+  extract_comments(Lines, Regex, [], undefined).
+
+extract_comments([], _Regex, Errors, _File) -> Errors;
+extract_comments([Line | Lines], Regex, Errors, File) ->
+  case re:run(Line, Regex, [{capture, [1, 2], list}]) of
+    {match, [LineNumber, Comments]} ->
+      Number = list_to_integer(LineNumber),
+      NewError = #{file => File, number => Number, text => Comments},
+      extract_comments(Lines, Regex, [NewError | Errors], File);
+    nomatch ->
+      %% Line contains the file with dialyze comments.
+      %% the next items are comments related with this line until the next File.
+      extract_comments(Lines, Regex, Errors, Line)
+  end.
+
 -spec error_source(Lines::[binary()], Tool::tool()) -> tool() | unknown.
+error_source(_Lines, xref = Tool) -> Tool;
+error_source(_Lines, elvis = Tool) -> Tool;
 error_source(Lines, Tool) ->
   LastLines = lists:sublist(lists:reverse(Lines), 3),
   Regexes = ["make.*?[:] [*][*][*] [[][^]]*[]] Error",
              "ERROR[:] compile failed",
-             "Compiling .* failed$"],
+             "Compiling .* failed$",
+             "Dialyzer works only for *",
+             "===> Error in dialyzing apps:*",
+             "{badmatch,{error*"
+             "Not * found"],
   MatchesRegexes =
     fun(Line) ->
       lists:any(fun(Regex) -> nomatch /= re:run(Line, Regex) end, Regexes)
     end,
   case lists:any(MatchesRegexes, LastLines) of
     true -> Tool;
+    false -> rebar_regex(Lines, Tool)
+  end.
+
+rebar_regex(Lines, Tool) ->
+  Regex = ".*===> Compilation failed.*",
+  case lists:any(fun(Line) -> nomatch /= re:run(Line, Regex) end, Lines) of
+    true -> Tool;
     false -> unknown
   end.
+
+-spec build_tool_type(file:name_all()) -> buildtool().
+build_tool_type(RepoDir) ->
+  ErlangMkIncluded = exists_file_in_repo(RepoDir, "erlang.mk"),
+  case ErlangMkIncluded of
+    true -> makefile;
+    false ->
+      RebarConfigIncluded = exists_file_in_repo(RepoDir, "rebar.config"),
+      case RebarConfigIncluded of
+        true -> rebar3;
+        false -> throw(
+                   {error, {status, 1, "Not rebar.config or erlang.mk found"}}
+                 )
+      end
+  end.
+
+-spec exists_file_in_repo(file:name_all(), string()) -> boolean().
+exists_file_in_repo(RepoDir, FileName) ->
+  filelib:is_file(filename:join(RepoDir, FileName)).

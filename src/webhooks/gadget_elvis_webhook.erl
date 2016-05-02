@@ -26,22 +26,13 @@ handle_pull_request(Cred, Req, GithubFiles) ->
     {ok, format_messages(Messages)}
   catch
     _:Error ->
-      Comments =
-          [#{ file   => "elvis.config"
-            , number => 0
-            , text   => Error
-            }],
-      Messages1 = gadget_utils:messages_from_comments( "Elvis"
-                                                     , Comments
-                                                     , GithubFiles
-                                                     ),
-      gadget_utils:report_error( elvis
-                               , Messages1
-                               , RepoName
-                               , 1
-                               , lists:flatten(io_lib:format("~p", [Error]))
-                               , Number
-                               )
+      gadget_utils:catch_error_source( io_lib:format("~p", [Error])
+                                     , 1
+                                     , elvis
+                                     , GithubFiles
+                                     , RepoName
+                                     , Number
+                                     )
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
