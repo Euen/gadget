@@ -1,7 +1,7 @@
 FROM ubuntu:latest
 
-RUN apt-get -y update \
-    apt-get -y dist-upgrade \
+RUN apt-get -y update &&\
+    apt-get -y dist-upgrade &&\
     apt-get install --fix-missing -y build-essential \
     libncurses5-dev \
     openssl \
