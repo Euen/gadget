@@ -12,7 +12,8 @@ register(Name, Tool, Token) ->
 %% @doc removes a repo from the database
 -spec unregister(string(), atom()) -> non_neg_integer().
 unregister(Name, Tool) ->
-  sumo:delete_by(gadget_repos, [{name, Name}, {tool, atom_to_list(Tool)}]).
+  sumo:delete_by(
+    gadget_repos, [{name, Name}, {tool, atom_to_binary(Tool, utf8)}]).
 
 %% @doc returns all registered repos
 -spec all() -> [gadget_repos:repo()].
@@ -21,7 +22,8 @@ all() -> sumo:find_all(gadget_repos).
 %% @doc returns a particular repo, if found
 -spec fetch(string(), atom()) -> notfound | gadget_repos:repo().
 fetch(Name, Tool) ->
-  case sumo:find_by(gadget_repos, [{name, Name}, {tool, atom_to_list(Tool)}]) of
+  Conditions = [{name, Name}, {tool, atom_to_binary(Tool, utf8)}],
+  case sumo:find_by(gadget_repos, Conditions) of
     [] -> notfound;
     [Repo|_] -> Repo
   end.

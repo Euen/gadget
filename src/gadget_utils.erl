@@ -362,14 +362,10 @@ report_error( Tool, [#{commit_id := CommitId} | _] = Messages, Repo, ExitStatus
   {ok, [map()], string()}.
 catch_error_source(Output, ExitStatus, Tool, GithubFiles, RepoName, Number) ->
   Lines = output_to_lines(Output),
-  case error_source(Lines, Tool) of
-    unknown -> {error, {failed, ExitStatus}};
-    Tool ->
-      Comments = extract_errors(Lines),
-      ToolName = capitalize(atom_to_binary(Tool, utf8)),
-      Messages = messages_from_comments(ToolName, Comments, GithubFiles),
-      report_error(Tool, Messages, RepoName, ExitStatus, Output, Number)
-  end.
+  Comments = extract_errors(Lines),
+  ToolName = capitalize(atom_to_binary(Tool, utf8)),
+  Messages = messages_from_comments(ToolName, Comments, GithubFiles),
+  report_error(Tool, Messages, RepoName, ExitStatus, Output, Number).
 
 -spec extract_errors(Lines ::[list()]) -> [map()].
 extract_errors(Lines) ->
