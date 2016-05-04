@@ -43,13 +43,16 @@
       #{elvis     => "http://gadget.inakalabs.com/webhook/elvis",
         compiler  => "http://gadget.inakalabs.com/webhook/compiler",
         xref      => "http://gadget.inakalabs.com/webhook/xref",
-        dialyzer  => "http://gadget.inakalabs.com/webhook/dialyzer"
+        dialyzer  => "http://gadget.inakalabs.com/webhook/dialyzer",
+        lewis     => "http://gadget.inakalabs.com/webhook/lewis"
        }
     },
     {pr_actions, [<<"opened">>, <<"reopened">>, <<"synchronize">>]},
     %% Basic Auth
     {github_user, "github-user"},
-    {github_password, "github-password"}
+    {github_password, "github-password"},
+    {android_sdk_path, "/Users/gadget/Library/Android/sdk/"},
+    {android_ndk_path, "/Users/gadget/Library/Android/sdk/ndk-bundle"}
    ]
  },
  {

@@ -23,6 +23,7 @@
         , extract_comments/1
         , build_tool_type/1
         , default_verbosity/1
+        , exists_file_in_repo/2
         ]).
 
 -type comment() :: #{file   => string(),
@@ -38,7 +39,7 @@
                       , status => on | off
                       , hook_id => binary()
                       }.
--type tool() :: xref | elvis | compiler | dialyzer.
+-type tool() :: xref | elvis | compiler | dialyzer | lewis.
 -type buildtool() :: makefile | rebar3.
 
 -export_type([webhook_info/0, comment/0, tool_info/0, tool/0]).
@@ -408,34 +409,6 @@ extract_comments([Line | Lines], Regex, Errors, File) ->
       %% Line contains the file with dialyze comments.
       %% the next items are comments related with this line until the next File.
       extract_comments(Lines, Regex, Errors, Line)
-  end.
-
--spec error_source(Lines::[binary()], Tool::tool()) -> tool() | unknown.
-error_source(_Lines, xref = Tool) -> Tool;
-error_source(_Lines, elvis = Tool) -> Tool;
-error_source(Lines, Tool) ->
-  LastLines = lists:sublist(lists:reverse(Lines), 3),
-  Regexes = ["make.*?[:] [*][*][*] [[][^]]*[]] Error",
-             "ERROR[:] compile failed",
-             "Compiling .* failed$",
-             "Dialyzer works only for *",
-             "===> Error in dialyzing apps:*",
-             "{badmatch,{error*"
-             "Not * found"],
-  MatchesRegexes =
-    fun(Line) ->
-      lists:any(fun(Regex) -> nomatch /= re:run(Line, Regex) end, Regexes)
-    end,
-  case lists:any(MatchesRegexes, LastLines) of
-    true -> Tool;
-    false -> rebar_regex(Lines, Tool)
-  end.
-
-rebar_regex(Lines, Tool) ->
-  Regex = ".*===> Compilation failed.*",
-  case lists:any(fun(Line) -> nomatch /= re:run(Line, Regex) end, Lines) of
-    true -> Tool;
-    false -> unknown
   end.
 
 -spec build_tool_type(file:name_all()) -> buildtool().
