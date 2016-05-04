@@ -13,6 +13,7 @@
 -export([test_compiler/1]).
 -export([test_xref/1]).
 -export([test_dialyzer/1]).
+-export([test_lewis/1]).
 
 -type config() :: [{atom(), term()}].
 
@@ -104,6 +105,9 @@ test_xref(Config) ->
 test_compiler(Config) ->
   basic_test(compiler, Config).
 
+-spec test_lewis(config()) -> config().
+test_lewis(Config) ->
+  basic_test(lewis, Config).
 
 -spec basic_test(atom(), config()) -> config().
 basic_test(Webhook, Config) ->
