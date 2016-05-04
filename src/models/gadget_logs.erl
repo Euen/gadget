@@ -37,13 +37,13 @@ sumo_schema() ->
 -spec sumo_sleep(log()) -> sumo:doc().
 sumo_sleep(Log) ->
   #{tool := Tool} = Log,
-  Log#{tool => atom_to_list(Tool)}.
+  Log#{tool => atom_to_binary(Tool, utf8)}.
 
 %% @hidden
 -spec sumo_wakeup(sumo:doc()) -> log().
 sumo_wakeup(Doc) ->
   #{tool := Tool} = Doc,
-  Doc#{tool => list_to_atom(Tool)}.
+  Doc#{tool => binary_to_atom(Tool, utf8)}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PUBLIC API
