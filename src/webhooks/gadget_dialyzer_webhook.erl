@@ -173,11 +173,12 @@ build_rebar3_commands(RepoDir) ->
   % here https://en.wikipedia.org/wiki/Termcap .
   % Here is what `rebar3' uses to check color capability
   % https://github.com/project-fifo/cf/blob/master/src/cf_term.erl
+  Rebar = gadget_utils:rebar3_command_path(RepoDir),
   [ "cd "
   , RepoDir
   , "; TERM=dumb QUIET=1 "
-  , "rebar3 "
-  , "dialyzer > gadget_dialyze.result"].
+  , Rebar
+  , " dialyzer > gadget_dialyze.result"].
 
 is_rebar3_output(FileContents) ->
   ContentList = string:tokens(binary_to_list(FileContents), "\n"),
