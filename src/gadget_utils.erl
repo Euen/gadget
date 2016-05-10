@@ -23,6 +23,7 @@
         , extract_comments/1
         , build_tool_type/1
         , default_verbosity/1
+        , rebar3_command_path/1
         ]).
 
 -type comment() :: #{file   => string(),
@@ -181,6 +182,7 @@ rebarize_project(RepoDir, Verbosity) ->
       run_command(["cd ", RepoDir, "; ", VerbOption, Rebar, " compile"])
   end.
 
+-spec rebar3_command_path(file:name_all()) -> string().
 rebar3_command_path(RepoDir) ->
   Rebar3Included = exists_file_in_repo(RepoDir, "rebar3"),
   case Rebar3Included of
