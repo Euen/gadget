@@ -13,6 +13,7 @@ RUN apt-get -y update &&\
     mysql-client \
     runit \
     libexpat1-dev \
+    autoconf \
     default-jdk
 
 COPY build/install_erlang.sh .

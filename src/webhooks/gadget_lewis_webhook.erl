@@ -65,44 +65,34 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
         , erlang:get_stacktrace()
         ]),
       {error, Error}
-  %%after
-    %%gadget_utils:ensure_dir_deleted(RepoDir)
+  after
+    gadget_utils:ensure_dir_deleted(RepoDir)
   end.
-
 
 create_local_properties(RepoDir) ->
   AndroidSDK =
-   application:get_env(gadget, android_sdk_path, RepoDir ++ "/sdk"),
+    application:get_env(gadget, android_sdk_path, RepoDir ++ "/sdk"),
   AndroidNDK =
-   application:get_env(gadget, android_ndk_path, RepoDir ++ "/sdk/ndk-bundle"),
+    application:get_env(gadget, android_ndk_path, RepoDir ++ "/sdk/ndk-bundle"),
   LocalPropPath = filename:join(RepoDir, "local.properties"),
   LocalPropData =
-   [ "ndk.dir=" , AndroidNDK, "\n"
-   , "sdk.dir=" , AndroidSDK
-   ],
+    [ "ndk.dir=" , AndroidNDK, "\n"
+    , "sdk.dir=" , AndroidSDK
+    ],
   ok = file:write_file(LocalPropPath, io_lib:fwrite("~s\n", [LocalPropData])).
 
 run_lewis(RepoDir) ->
-
-try
   Command = ["cd ", RepoDir, "; ", "./gradlew lint"],
-  lager:critical("RepoDir ~p ", [RepoDir]),
   _OutPut = gadget_utils:run_command(Command),
-  XmlFilePath =
-    filename:join(RepoDir, "app/build/outputs/lint-results-debug.xml"),
+  XmlFilePath = lint_result_xml_path(RepoDir),
   LintResultExist = filelib:is_file(XmlFilePath),
   case LintResultExist of
     false   -> throw({error, {status, 1, "Not lint-results.xml file found"}});
     true    -> ok
-  end
-catch
-   _:{error, {status, 1, []}} = Error ->   lager:critical("catch Error~p ", [Error ]);
-    _ ->     ok
   end.
 
 comments_from_lewis(RepoDir) ->
-  XmlFilePath =
-    filename:join(RepoDir, "app/build/outputs/lint-results-debug.xml"),
+  XmlFilePath = lint_result_xml_path(RepoDir),
   {XmlComments, _} = xmerl_scan:file(XmlFilePath),
   {issues, _, RawComments} = xmerl_lib:simplify_element(XmlComments),
   Comments = trim_separator_xmerl(RawComments),
@@ -111,13 +101,13 @@ comments_from_lewis(RepoDir) ->
 format_lewis_to_gadget_comment({issue, Tags, RawLocations}) ->
   Locations = trim_separator_xmerl(RawLocations),
 
-  [{id, _},
-   {severity, _Error},
+  [{id, Id},
+   {severity, Severity},
    {message, Msg},
-   {category, _category},
+   {category, Category},
    {priority, _PriorityNumber},
    {summary, _Summary},
-   {explanation, Expla}
+   {explanation, Explanation}
    | _Rest
   ] = Tags,
 
@@ -125,19 +115,29 @@ format_lewis_to_gadget_comment({issue, Tags, RawLocations}) ->
    fun({location, LocationTagsData, _}) ->
      File = proplists:get_value(file, LocationTagsData, ""),
      Line = proplists:get_value(line, LocationTagsData, 0),
-     Text = "## Message: " ++ Msg ++ ".\n" ++ "## Explanation: " ++ Expla,
      #{ file   => File
-      , number => Line
-      , text   => Text 
+      , number => list_to_integer(Line)
+      , text   => format_text_messge(Id, Severity, Msg, Category, Explanation)
       }
    end,
-  %% For one error/warrning we can get several locations in reviewing the code.
+  %% For one error/warning we can get several locations in reviewing the code.
   lists:map(FunMapLocations, Locations).
 
+format_text_messge(Id, Severity, Msg, Category, Explanation) ->
+  [ "\n"
+  , "| Id                  | Severity | Category    |", "\n"
+  , "|---------------------|----------|-------------|", "\n"
+  , "| ", Id , " | ", Severity , " | " , Category,  " |", "\n"
+  , " **Message**: ", Msg, ".\n "
+  , " **Explanation**: ", Explanation, ".\n "
+  ].
 
 trim_separator_xmerl(XmlerData) ->
   %% The XmlerData had "\n        " separator between every tuple() with data.
   lists:filter(fun erlang:is_tuple/1, XmlerData).
+
+lint_result_xml_path(RepoDir) ->
+  filename:join(RepoDir, "app/build/outputs/lint-results-debug.xml").
 
 messages_from_lewis(Comments, GithubFiles) ->
   gadget_utils:messages_from_comments("Lewis", Comments, GithubFiles).

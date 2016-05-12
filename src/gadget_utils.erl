@@ -24,6 +24,7 @@
         , build_tool_type/1
         , default_verbosity/1
         , exists_file_in_repo/2
+        , rebar3_command_path/1
         ]).
 
 -type comment() :: #{file   => string(),
@@ -182,6 +183,7 @@ rebarize_project(RepoDir, Verbosity) ->
       run_command(["cd ", RepoDir, "; ", VerbOption, Rebar, " compile"])
   end.
 
+-spec rebar3_command_path(file:name_all()) -> string().
 rebar3_command_path(RepoDir) ->
   Rebar3Included = exists_file_in_repo(RepoDir, "rebar3"),
   case Rebar3Included of
@@ -362,10 +364,14 @@ report_error( Tool, [#{commit_id := CommitId} | _] = Messages, Repo, ExitStatus
   {ok, [map()], string()}.
 catch_error_source(Output, ExitStatus, Tool, GithubFiles, RepoName, Number) ->
   Lines = output_to_lines(Output),
-  Comments = extract_errors(Lines),
-  ToolName = capitalize(atom_to_binary(Tool, utf8)),
-  Messages = messages_from_comments(ToolName, Comments, GithubFiles),
-  report_error(Tool, Messages, RepoName, ExitStatus, Output, Number).
+  case error_source(Lines, Tool) of
+    unknown -> {error, {failed, ExitStatus}};
+    Tool ->
+      Comments = extract_errors(Lines),
+      ToolName = capitalize(atom_to_binary(Tool, utf8)),
+      Messages = messages_from_comments(ToolName, Comments, GithubFiles),
+      report_error(Tool, Messages, RepoName, ExitStatus, Output, Number)
+  end.
 
 -spec extract_errors(Lines ::[list()]) -> [map()].
 extract_errors(Lines) ->
@@ -409,6 +415,36 @@ extract_comments([Line | Lines], Regex, Errors, File) ->
       %% Line contains the file with dialyze comments.
       %% the next items are comments related with this line until the next File.
       extract_comments(Lines, Regex, Errors, Line)
+  end.
+
+
+-spec error_source(Lines::[binary()], Tool::tool()) -> tool() | unknown.
+error_source(_Lines, xref = Tool) -> Tool;
+error_source(_Lines, elvis = Tool) -> Tool;
+error_source(_Lines, lewis = Tool) -> Tool;
+error_source(Lines, Tool) ->
+  LastLines = lists:sublist(lists:reverse(Lines), 3),
+  Regexes = ["make.*?[:] [*][*][*] [[][^]]*[]] Error",
+             "ERROR[:] compile failed",
+             "Compiling .* failed$",
+             "Dialyzer works only for *",
+             "===> Error in dialyzing apps:*",
+             "{badmatch,{error*"
+             "Not * found"],
+  MatchesRegexes =
+    fun(Line) ->
+      lists:any(fun(Regex) -> nomatch /= re:run(Line, Regex) end, Regexes)
+    end,
+  case lists:any(MatchesRegexes, LastLines) of
+    true -> Tool;
+    false -> rebar_regex(Lines, Tool)
+  end.
+
+rebar_regex(Lines, Tool) ->
+  Regex = ".*===> Compilation failed.*",
+  case lists:any(fun(Line) -> nomatch /= re:run(Line, Regex) end, Lines) of
+    true -> Tool;
+    false -> unknown
   end.
 
 -spec build_tool_type(file:name_all()) -> buildtool().
