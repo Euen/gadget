@@ -16,6 +16,7 @@
 -export([ valid_organization_repositories_test/1
         , valid_organization_payload_test/1
         , invalid_organization_payload_test/1]).
+-export([test_lewis/1]).
 
 -type config() :: [{atom(), term()}].
 
@@ -79,9 +80,10 @@ end_per_testcase(_TestCase, Config) ->
 
 -spec test_status(config()) -> config().
 test_status(Config) ->
+
   Header = #{<<"Content-Type">> => <<"text/plain; charset=utf-8">>},
   {ok, Response} =
-    gadget_test_utils:api_call(get, "/status", Header),
+  gadget_test_utils:api_call(get, "/status", Header),
   #{status_code := 200, body := <<"Server is Up">>} = Response,
   Config.
 
@@ -89,7 +91,7 @@ test_status(Config) ->
 test_about(Config) ->
   Header = #{<<"Content-Type">> => <<"text/plain; charset=utf-8">>},
   {ok, Response} =
-    gadget_test_utils:api_call(get, "/about", Header),
+  gadget_test_utils:api_call(get, "/about", Header),
   #{status_code := 200} = Response,
   Config.
 
@@ -97,7 +99,7 @@ test_about(Config) ->
 test_login(Config) ->
   Header = #{<<"Content-Type">> => <<"text/plain; charset=utf-8">>},
   {ok, Response} =
-    gadget_test_utils:api_call(get, "/login", Header),
+  gadget_test_utils:api_call(get, "/login", Header),
   #{status_code := 302} = Response,
   Config.
 
@@ -116,6 +118,10 @@ test_xref(Config) ->
 -spec test_compiler(config()) -> config().
 test_compiler(Config) ->
   basic_test(compiler, Config).
+
+-spec test_lewis(config()) -> config().
+test_lewis(Config) ->
+  basic_test(lewis, Config).
 
 -spec basic_test(atom(), config()) -> config().
 basic_test(Webhook, Config) ->

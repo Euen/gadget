@@ -44,13 +44,16 @@
         compiler  => "http://gadget-internal.inakalabs.com/webhook/compiler",
         xref      => "http://gadget-internal.inakalabs.com/webhook/xref",
         dialyzer  => "http://gadget-internal.inakalabs.com/webhook/dialyzer"
+        lewis     => "http://gadget-internal.inakalabs.com/webhook/lewis"
        }
     },
     {pr_actions, [<<"opened">>, <<"reopened">>, <<"synchronize">>]},
     {valid_organizations, [<<"inaka">>, <<"nanoscopia">>, <<"esl">>]},
     %% Basic Auth
     {github_user, "github-user"},
-    {github_password, "github-password"}
+    {github_password, "github-password"},
+    {android_sdk_path, "/Users/gadget/Library/Android/sdk/"},
+    {android_ndk_path, "/Users/gadget/Library/Android/sdk/ndk-bundle"}
    ]
  },
  {
