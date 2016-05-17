@@ -23,6 +23,7 @@
         , extract_comments/1
         , build_tool_type/1
         , default_verbosity/1
+        , exists_file_in_repo/2
         , rebar3_command_path/1
         ]).
 
@@ -39,7 +40,7 @@
                       , status => on | off
                       , hook_id => binary()
                       }.
--type tool() :: xref | elvis | compiler | dialyzer.
+-type tool() :: xref | elvis | compiler | dialyzer | lewis.
 -type buildtool() :: makefile | rebar3.
 
 -export_type([webhook_info/0, comment/0, tool_info/0, tool/0]).
@@ -417,9 +418,11 @@ extract_comments([Line | Lines], Regex, Errors, File) ->
       extract_comments(Lines, Regex, Errors, Line)
   end.
 
+
 -spec error_source(Lines::[binary()], Tool::tool()) -> tool() | unknown.
 error_source(_Lines, xref = Tool) -> Tool;
 error_source(_Lines, elvis = Tool) -> Tool;
+error_source(_Lines, lewis = Tool) -> Tool;
 error_source(Lines, Tool) ->
   LastLines = lists:sublist(lists:reverse(Lines), 3),
   Regexes = ["make.*?[:] [*][*][*] [[][^]]*[]] Error",
