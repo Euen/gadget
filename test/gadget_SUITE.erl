@@ -133,7 +133,10 @@ basic_test(Webhook, Config) ->
   {ok, JsonBody} =
     file:read_file("../../test/github_payloads/initial-payload.json"),
   {ok, Response} =
-    gadget_test_utils:api_call(get, "/webhook/compiler/", Header, JsonBody),
+    gadget_test_utils:api_call( get
+                              , "/webhook/" ++ atom_to_list(Webhook)
+                              , Header
+                              , JsonBody),
   % Given payload does not have an action key because it is the initial payload
   % sent by GitHub after you register a webhook, so it is ignored by gadget.
   #{ status_code := 200, body := <<"Event ignored.">>} = Response,
