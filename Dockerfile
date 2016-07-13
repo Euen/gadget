@@ -17,13 +17,11 @@ RUN dpkg --add-architecture i386 && \
         libncurses5-dev \
         openssl \
         libssl-dev \
-        fop \
         wget \
         git \
         mysql-client \
         runit \
         vim \
-        openjdk-7-jdk \
         python-pip \
         libexpat1-dev \
         autoconf \
@@ -40,10 +38,10 @@ ENV PATH ${ANDROID_HOME}/tools:$ANDROID_HOME/platform-tools:$PATH
 # SUPPORT GRADLE
 ENV TERM dumb
 ENV JAVA_OPTS -Xms256m -Xmx512m
- 
+
 COPY build/android_sdk_components.env /android_sdk_components.env
 RUN echo y | android update sdk --no-ui --all --filter "$(cat /android_sdk_components.env)"
-  
+
 #INSTALL ERLANG
 COPY build/install_erlang.sh .
 RUN ./install_erlang.sh
