@@ -43,6 +43,7 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
 process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
+    ok = create_local_properties(RepoDir),
     ok = run_lewis(RepoDir),
     Comments = comments_from_lewis(RepoDir),
     Messages = messages_from_lewis(Comments, GithubFiles),
@@ -68,9 +69,20 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
     gadget_utils:ensure_dir_deleted(RepoDir)
   end.
 
+create_local_properties(RepoDir) ->
+  ExportSdk = "export ANDROID_HOME=/usr/local/android-sdk-linux",
+  _OutPut = gadget_utils:run_command([ExportSdk]),
+  AndroidSDK = os:getenv("ANDROID_HOME"),
+  AndroidNDK = os:getenv("ANDROID_HOME") ++ "/ndk-bundle",
+  LocalPropPath = filename:join(RepoDir, "local.properties"),
+  LocalPropData =
+    [ "ndk.dir=" , AndroidNDK, "\n"
+    , "sdk.dir=" , AndroidSDK
+    ],
+  ok = file:write_file(LocalPropPath, io_lib:fwrite("~s\n", [LocalPropData])).
+
 run_lewis(RepoDir) ->
-  ExportSdk = "export ANDROID_HOME=/usr/local/android-sdk-linux; ",
-  Command = [ExportSdk, "cd ", RepoDir, "; ", "./gradlew lint"],
+  Command = ["cd ", RepoDir, "; ", "./gradlew lint"],
   _OutPut = gadget_utils:run_command(Command),
   XmlFilePath = lint_result_xml_path(RepoDir),
   LintResultExist = filelib:is_file(XmlFilePath),
