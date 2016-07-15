@@ -46,9 +46,7 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
     ok = create_local_properties(RepoDir),
     ok = run_lewis(RepoDir),
     Comments = comments_from_lewis(RepoDir),
-    ct:print("GithubFiles ~p", [GithubFiles]),
     Messages = messages_from_lewis(Comments, GithubFiles),
-    ct:print("Messages ~p", [Messages]),
 
     {ok, Messages}
   catch
@@ -73,7 +71,7 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   end.
 
 create_local_properties(RepoDir) ->
-  os:putenv("ANDROID_HOME", "/Users/euen/Library/Android/sdk"),
+  os:putenv("ANDROID_HOME", "/usr/local/android-sdk-linux"),
   AndroidSDK = os:getenv("ANDROID_HOME"),
   LocalPropPath = filename:join(RepoDir, "local.properties"),
   LocalPropData = ["sdk.dir=" , AndroidSDK],
