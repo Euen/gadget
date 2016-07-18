@@ -76,7 +76,7 @@ create_local_properties(RepoDir) ->
   AndroidSDK = os:getenv("ANDROID_HOME"),
   LocalPropPath = filename:join(RepoDir, "local.properties"),
   LocalPropData = ["sdk.dir=" , AndroidSDK],
-  ok = file:write_file(LocalPropPath, [LocalPropData, $\n])).
+  ok = file:write_file(LocalPropPath, [LocalPropData, $\n]).
 
 run_lewis(RepoDir) ->
   Command = ["cd ", RepoDir, "; ", "./gradlew lint --stacktrace"],
