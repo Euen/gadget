@@ -70,7 +70,7 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   end.
 
 create_local_properties(RepoDir) ->
-  {ok, SdkPath} =
+  SdkPath =
     application:get_env(gadget, sdk_path, "/usr/local/android-sdk-linux"),
   os:putenv("ANDROID_HOME", SdkPath),
   AndroidSDK = os:getenv("ANDROID_HOME"),
