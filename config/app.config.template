@@ -33,6 +33,7 @@
  {
    gadget,
    [
+    {sdk_path, "/usr/local/android-sdk-linux"},
     %% OAuth
     {github_scope, "public_repo,repo:status,read:org"},
     {github_client_id, "bcn98345nv2098682c69"},

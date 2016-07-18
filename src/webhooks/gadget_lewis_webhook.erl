@@ -43,6 +43,7 @@ handle_pull_request(Cred, ReqData, GithubFiles) ->
 process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   try
     ok = gadget_utils:clone_repo(RepoDir, Branch, GitUrl),
+    ok = create_local_properties(RepoDir),
     ok = run_lewis(RepoDir),
     Comments = comments_from_lewis(RepoDir),
     Messages = messages_from_lewis(Comments, GithubFiles),
@@ -68,9 +69,17 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
     gadget_utils:ensure_dir_deleted(RepoDir)
   end.
 
+create_local_properties(RepoDir) ->
+  {ok, SdkPath} =
+    application:get_env(gadget, sdk_path, "/usr/local/android-sdk-linux"),
+  os:putenv("ANDROID_HOME", SdkPath),
+  AndroidSDK = os:getenv("ANDROID_HOME"),
+  LocalPropPath = filename:join(RepoDir, "local.properties"),
+  LocalPropData = ["sdk.dir=" , AndroidSDK],
+  ok = file:write_file(LocalPropPath, [LocalPropData, $\n])).
+
 run_lewis(RepoDir) ->
-  ExportSdk = "export ANDROID_HOME=/usr/local/android-sdk-linux; ",
-  Command = [ExportSdk, "cd ", RepoDir, "; ", "./gradlew lint"],
+  Command = ["cd ", RepoDir, "; ", "./gradlew lint --stacktrace"],
   _OutPut = gadget_utils:run_command(Command),
   XmlFilePath = lint_result_xml_path(RepoDir),
   LintResultExist = filelib:is_file(XmlFilePath),
