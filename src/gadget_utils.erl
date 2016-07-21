@@ -5,6 +5,7 @@
         , tool_info/3
         , is_public/1
         , is_admin/1
+        , is_supported/2
         , ensure_repo_dir/1
         , clone_repo/3
         , ensure_dir_deleted/1
@@ -89,6 +90,32 @@ is_public(#{<<"private">> := Private}) -> not Private.
 -spec is_admin(map()) -> boolean().
 is_admin(#{<<"permissions">> := #{<<"admin">> := true}}) -> true;
 is_admin(_Repo) -> false.
+
+%% @doc is this repository language supported by gadget?
+-spec is_supported(Repo::map(), Cred::egithub:credentials()) -> boolean().
+is_supported(#{<<"language">> := null}, _Cred) ->
+  true;
+is_supported(#{<<"language">> := Language} = Repo, Cred) ->
+  {ok, SupportedLanguages} = application:get_env(gadget, supported_languages),
+  % Check if main language is a supported language
+  case lists:member(Language, SupportedLanguages) of
+    true ->
+      true;
+    false ->
+      FullName = maps:get(<<"full_name">>, Repo),
+      % Returns a map in the form:
+      % #{<<"LanguageName">> => number_of_bytes_written_in_this_language,
+      %   <<"AnotherLanguageName">> => number_of_bytes_written_in_this_language}
+      {ok, LanguagesMap} = egithub:languages(Cred, FullName),
+      Languages = maps:keys(LanguagesMap),
+      % Second chance: check if any of the languages used for this repo
+      %                is a supported language.
+      lists:any(
+        fun(Lang) ->
+          lists:member(Lang, SupportedLanguages)
+        end,
+        Languages)
+  end.
 
 %% @doc make sure that there is a directory where to clone the repository
 -spec ensure_repo_dir(binary()) -> file:name_all().
