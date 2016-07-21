@@ -59,11 +59,13 @@ repositories(Cred) ->
     end,
   AllOrgsRepos = lists:flatmap(OrgReposFun, Orgs),
 
-  PublicRepos =
+  PublicSupportedRepos =
     [Repo || Repo <- Repos ++ AllOrgsRepos,
-             gadget_utils:is_admin(Repo), gadget_utils:is_public(Repo)],
+     gadget_utils:is_admin(Repo),
+     gadget_utils:is_public(Repo),
+     gadget_utils:is_supported(Repo, Cred)],
 
-  lists:sort([repo_info(Cred, Repo) || Repo <- PublicRepos]).
+  lists:sort([repo_info(Cred, Repo) || Repo <- PublicSupportedRepos]).
 
 -spec repo_info(egithub:credentials(), map()) -> [tuple()].
 repo_info(Cred, Repo) ->

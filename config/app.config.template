@@ -54,6 +54,9 @@
     {github_password, "github-password"},
     {android_sdk_path, "/Users/gadget/Library/Android/sdk/"},
     {android_ndk_path, "/Users/gadget/Library/Android/sdk/ndk-bundle"}
+    %% Supported languages
+    %% Make sure to capitalize the values within the list
+    {supported_languages, [<<"Android">>, <<"Erlang">>]}
    ]
  },
  {
