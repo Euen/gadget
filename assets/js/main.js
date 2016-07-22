@@ -5,6 +5,7 @@
       },
       toggle : function(e) {
           var button = $(this);
+          if (button.is('.disable')) return false;
           var repo = button.attr('data-repo');
           var toolName = button.attr('data-tool');
           var data = JSON.stringify({'tool': toolName, 'repo': repo});
@@ -32,6 +33,12 @@
   };
 
 $(function() {
+    $(document).ajaxStart(function() {
+        $(document.body).css({"cursor": "wait"});
+    }).ajaxComplete(function() {
+        $(document.body).css({"cursor": "default"});
+    });
+
     $("#login").on('click', Main.login);
 
     $("button.toggle").on('click', Main.toggle);

@@ -92,9 +92,10 @@ is_admin(#{<<"permissions">> := #{<<"admin">> := true}}) -> true;
 is_admin(_Repo) -> false.
 
 %% @doc is this repository language supported by gadget?
--spec is_supported(Repo::map(), Cred::egithub:credentials()) -> boolean().
-is_supported(#{<<"language">> := null}, _Cred) ->
-  true;
+-spec is_supported(Repo::map(), Cred::egithub:credentials()) ->
+  {true, map()} | boolean().
+is_supported(#{<<"language">> := null} = Repo, _Cred) ->
+  {true, Repo#{<<"languages">> => []}};
 is_supported(#{<<"language">> := Language} = Repo, Cred) ->
   {ok, Tools} = application:get_env(gadget, webhooks),
   ToolsLangs = lists:foldl(fun(#{languages := Langs}, Acc) ->
@@ -104,8 +105,12 @@ is_supported(#{<<"language">> := Language} = Repo, Cred) ->
                            maps:values(Tools)),
   % Remove repeated values
   SupportedLangs = lists:usort(ToolsLangs),
-  lists:member(Language, SupportedLangs) orelse
-  languages_intersect(Repo, SupportedLangs, Cred).
+  case lists:member(Language, SupportedLangs) of
+    true ->
+      {true, Repo#{<<"languages">> => [Language]}};
+    false ->
+      languages_intersect(Repo, SupportedLangs, Cred)
+  end.
 
 %% @doc make sure that there is a directory where to clone the repository
 -spec ensure_repo_dir(binary()) -> file:name_all().
@@ -493,7 +498,10 @@ exists_file_in_repo(RepoDir, FileName) ->
   boolean().
 languages_intersect(Repo, SupportedLangs, Cred) ->
   RepoLangs = repo_langs(Repo, Cred),
-  RepoLangs =/= (RepoLangs -- SupportedLangs).
+  case RepoLangs -- (RepoLangs -- SupportedLangs) of
+    [] -> false;
+    Langs -> {true, Repo#{<<"languages">> => Langs}}
+  end.
 
 -spec repo_langs(Repo::map(), Cred::egithub:credentials()) ->
   [binary()].
