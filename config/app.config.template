@@ -41,11 +41,17 @@
     {status_details_url, "http://gadget-internal.inakalabs.com/webhook/status-details/"},
     %% Webhooks
     {webhooks,
-      #{elvis     => "http://gadget-internal.inakalabs.com/webhook/elvis",
-        compiler  => "http://gadget-internal.inakalabs.com/webhook/compiler",
-        xref      => "http://gadget-internal.inakalabs.com/webhook/xref",
-        dialyzer  => "http://gadget-internal.inakalabs.com/webhook/dialyzer"
-        lewis     => "http://gadget-internal.inakalabs.com/webhook/lewis"
+      %% Make sure to capitalize the values for the languages list
+      #{elvis     => #{url => "http://gadget-internal.inakalabs.com/webhook/elvis",
+                       languages => [<<"Erlang">>]},
+        compiler  => #{url => "http://gadget-internal.inakalabs.com/webhook/compiler",
+                       languages => [<<"Erlang">>]},
+        xref      => #{url => "http://gadget-internal.inakalabs.com/webhook/xref",
+                       languages => [<<"Erlang">>]},
+        dialyzer  => #{url => "http://gadget-internal.inakalabs.com/webhook/dialyzer",
+                       languages => [<<"Erlang">>]},
+        lewis     => #{url => "http://gadget-internal.inakalabs.com/webhook/lewis",
+                       languages => [<<"Java">>]}
        }
     },
     {pr_actions, [<<"opened">>, <<"reopened">>, <<"synchronize">>]},
@@ -55,9 +61,6 @@
     {github_password, "github-password"},
     {android_sdk_path, "/Users/gadget/Library/Android/sdk/"},
     {android_ndk_path, "/Users/gadget/Library/Android/sdk/ndk-bundle"}
-    %% Supported languages
-    %% Make sure to capitalize the values within the list
-    {supported_languages, [<<"Android">>, <<"Erlang">>]}
    ]
  },
  {

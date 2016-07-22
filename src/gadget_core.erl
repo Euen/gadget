@@ -12,7 +12,7 @@ register(Repo, Tool, Token) ->
   {ok, WebhookMap} = application:get_env(gadget, webhooks),
   case maps:get(Tool, WebhookMap, false) of
     false -> false;
-    WebhookUrl ->
+    #{url := WebhookUrl} ->
       Cred = egithub:oauth(Token),
       try
         Result =

@@ -56,7 +56,7 @@ active_tools(Hooks) ->
 %% @doc Retrieves information about a tool related to a particular repo
 -spec tool_info(atom(), map(), [map()]) -> tool_info().
 tool_info(ToolName, Tools, Hooks) ->
-  ToolUrl = maps:get(ToolName, Tools),
+  ToolUrl = maps:get(url, maps:get(ToolName, Tools)),
   Fun =
     fun (#{<<"config">> := #{<<"url">> := HookUrl}}) ->
       list_to_binary(ToolUrl) == HookUrl;
@@ -96,26 +96,16 @@ is_admin(_Repo) -> false.
 is_supported(#{<<"language">> := null}, _Cred) ->
   true;
 is_supported(#{<<"language">> := Language} = Repo, Cred) ->
-  {ok, SupportedLanguages} = application:get_env(gadget, supported_languages),
-  % Check if main language is a supported language
-  case lists:member(Language, SupportedLanguages) of
-    true ->
-      true;
-    false ->
-      FullName = maps:get(<<"full_name">>, Repo),
-      % Returns a map in the form:
-      % #{<<"LanguageName">> => number_of_bytes_written_in_this_language,
-      %   <<"AnotherLanguageName">> => number_of_bytes_written_in_this_language}
-      {ok, LanguagesMap} = egithub:languages(Cred, FullName),
-      Languages = maps:keys(LanguagesMap),
-      % Second chance: check if any of the languages used for this repo
-      %                is a supported language.
-      lists:any(
-        fun(Lang) ->
-          lists:member(Lang, SupportedLanguages)
-        end,
-        Languages)
-  end.
+  {ok, Tools} = application:get_env(gadget, webhooks),
+  ToolsLangs = lists:foldl(fun(#{languages := Langs}, Acc) ->
+                             Acc ++ Langs
+                           end,
+                           [],
+                           maps:values(Tools)),
+  % Remove repeated values
+  SupportedLangs = lists:usort(ToolsLangs),
+  lists:member(Language, SupportedLangs) orelse
+  languages_intersect(Repo, SupportedLangs, Cred).
 
 %% @doc make sure that there is a directory where to clone the repository
 -spec ensure_repo_dir(binary()) -> file:name_all().
@@ -493,3 +483,22 @@ build_tool_type(RepoDir) ->
 -spec exists_file_in_repo(file:name_all(), string()) -> boolean().
 exists_file_in_repo(RepoDir, FileName) ->
   filelib:is_file(filename:join(RepoDir, FileName)).
+
+%% =============================================================================
+%% Private
+%% =============================================================================
+
+-spec languages_intersect(Repo::map(),
+                          SupportedLangs::[binary()],
+                          Cred::egithub:credentials()) ->
+  boolean().
+languages_intersect(Repo, SupportedLangs, Cred) ->
+  RepoLangs = repo_langs(Repo, Cred),
+  RepoLangs =/= (RepoLangs -- SupportedLangs).
+
+-spec repo_langs(Repo::map(), Cred::egithub:credentials()) ->
+  [binary()].
+repo_langs(Repo, Cred) ->
+  FullName = maps:get(<<"full_name">>, Repo),
+  {ok, LanguagesMap} = egithub:languages(Cred, FullName),
+  maps:keys(LanguagesMap).
