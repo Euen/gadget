@@ -5,6 +5,7 @@
         , tool_info/3
         , is_public/1
         , is_admin/1
+        , is_supported/2
         , ensure_repo_dir/1
         , clone_repo/3
         , ensure_dir_deleted/1
@@ -55,7 +56,7 @@ active_tools(Hooks) ->
 %% @doc Retrieves information about a tool related to a particular repo
 -spec tool_info(atom(), map(), [map()]) -> tool_info().
 tool_info(ToolName, Tools, Hooks) ->
-  ToolUrl = maps:get(ToolName, Tools),
+  ToolUrl = maps:get(url, maps:get(ToolName, Tools)),
   Fun =
     fun (#{<<"config">> := #{<<"url">> := HookUrl}}) ->
       list_to_binary(ToolUrl) == HookUrl;
@@ -89,6 +90,27 @@ is_public(#{<<"private">> := Private}) -> not Private.
 -spec is_admin(map()) -> boolean().
 is_admin(#{<<"permissions">> := #{<<"admin">> := true}}) -> true;
 is_admin(_Repo) -> false.
+
+%% @doc is this repository language supported by gadget?
+-spec is_supported(Repo::map(), Cred::egithub:credentials()) ->
+  {true, map()} | boolean().
+is_supported(#{<<"language">> := null} = Repo, _Cred) ->
+  {true, Repo#{<<"languages">> => []}};
+is_supported(#{<<"language">> := Language} = Repo, Cred) ->
+  {ok, Tools} = application:get_env(gadget, webhooks),
+  ToolsLangs = lists:foldl(fun(#{languages := Langs}, Acc) ->
+                             Acc ++ Langs
+                           end,
+                           [],
+                           maps:values(Tools)),
+  % Remove repeated values
+  SupportedLangs = lists:usort(ToolsLangs),
+  case lists:member(Language, SupportedLangs) of
+    true ->
+      {true, Repo#{<<"languages">> => [Language]}};
+    false ->
+      languages_intersect(Repo, SupportedLangs, Cred)
+  end.
 
 %% @doc make sure that there is a directory where to clone the repository
 -spec ensure_repo_dir(binary()) -> file:name_all().
@@ -465,3 +487,25 @@ build_tool_type(RepoDir) ->
 -spec exists_file_in_repo(file:name_all(), string()) -> boolean().
 exists_file_in_repo(RepoDir, FileName) ->
   filelib:is_file(filename:join(RepoDir, FileName)).
+
+%% =============================================================================
+%% Private
+%% =============================================================================
+
+-spec languages_intersect(Repo::map(),
+                          SupportedLangs::[binary()],
+                          Cred::egithub:credentials()) ->
+  boolean().
+languages_intersect(Repo, SupportedLangs, Cred) ->
+  RepoLangs = repo_langs(Repo, Cred),
+  case RepoLangs -- (RepoLangs -- SupportedLangs) of
+    [] -> false;
+    Langs -> {true, Repo#{<<"languages">> => Langs}}
+  end.
+
+-spec repo_langs(Repo::map(), Cred::egithub:credentials()) ->
+  [binary()].
+repo_langs(Repo, Cred) ->
+  FullName = maps:get(<<"full_name">>, Repo),
+  {ok, LanguagesMap} = egithub:languages(Cred, FullName),
+  maps:keys(LanguagesMap).
