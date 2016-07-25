@@ -201,6 +201,12 @@ button {
     text-shadow: -1px 0 #090, 0 1px #090, 1px 0 #090, 0 -1px #090;
 }
 
+#content button.toggle.disable{
+    background: rgb(236, 236, 236);
+    color: #CCC;
+    cursor: not-allowed;
+}
+
 h1, h2, h3, h4, h5 {
     font-family: 'Museo500', sans-serif;
     font-weight: normal;

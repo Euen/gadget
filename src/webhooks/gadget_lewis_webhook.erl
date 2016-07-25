@@ -71,11 +71,13 @@ process_pull_request(RepoDir, RepoName, Branch, GitUrl, GithubFiles, Number) ->
   end.
 
 create_local_properties(RepoDir) ->
-  os:putenv("ANDROID_HOME", "/usr/local/android-sdk-linux"),
+  SdkPath =
+    application:get_env(gadget, sdk_path, "/usr/local/android-sdk-linux"),
+  os:putenv("ANDROID_HOME", SdkPath),
   AndroidSDK = os:getenv("ANDROID_HOME"),
   LocalPropPath = filename:join(RepoDir, "local.properties"),
   LocalPropData = ["sdk.dir=" , AndroidSDK],
-  ok = file:write_file(LocalPropPath, io_lib:fwrite("~s\n", [LocalPropData])).
+  ok = file:write_file(LocalPropPath, [LocalPropData, $\n]).
 
 run_lewis(RepoDir) ->
   Command = ["cd ", RepoDir, "; ", "./gradlew lint --stacktrace"],
