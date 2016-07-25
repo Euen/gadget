@@ -5,6 +5,7 @@ ENV DEBIAN_FRONTEND noninteractive
 # INSTALL LEWIS DEPENDENCIES
 RUN dpkg --add-architecture i386 && \
     apt-get update && \
+    apt-get -y dist-upgrade && \
     apt-get install -yq libstdc++6:i386 zlib1g:i386 libncurses5:i386 --no-install-recommends && \
     apt-get -y install --reinstall locales && \
     dpkg-reconfigure locales && \
@@ -12,6 +13,19 @@ RUN dpkg --add-architecture i386 && \
     locale-gen ja_JP.UTF-8 && \
     localedef --list-archive && locale -a &&  \
     update-locale &&  \
+    apt-get install --fix-missing -y build-essential \
+        libncurses5-dev \
+        openssl \
+        libssl-dev \
+        wget \
+        git \
+        mysql-client \
+        runit \
+        vim \
+        python-pip \
+        libexpat1-dev \
+        autoconf \
+        openssh-server && \
     apt-get clean
 
 # DOWNLOAD AND UNTAR SDK
@@ -24,27 +38,9 @@ ENV PATH ${ANDROID_HOME}/tools:$ANDROID_HOME/platform-tools:$PATH
 # SUPPORT GRADLE
 ENV TERM dumb
 ENV JAVA_OPTS -Xms256m -Xmx512m
- 
+
 COPY build/android_sdk_components.env /android_sdk_components.env
 RUN echo y | android update sdk --no-ui --all --filter "$(cat /android_sdk_components.env)"
-  
-RUN apt-get -y update
-RUN apt-get -y dist-upgrade
-RUN apt-get install --fix-missing -y build-essential \
-        libncurses5-dev \
-        openssl \
-        libssl-dev \
-        fop \
-        wget \
-        git \
-        mysql-client \
-        runit \
-        vim \
-        openjdk-7-jdk \
-        python-pip \
-        libexpat1-dev \
-        autoconf \
-        openssh-server
 
 #INSTALL ERLANG
 COPY build/install_erlang.sh .
