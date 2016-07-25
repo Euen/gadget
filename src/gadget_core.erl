@@ -136,7 +136,7 @@ get_all_repos(Cred, Repos) ->
   AllRepos =
     [Repo || Repo <- Repos,
      gadget_utils:is_admin(Repo),
-     gadget_utils:is_public(Repo)],
+     (not gadget_utils:is_public(Repo))],
 
   lists:sort([
     repo_info(Cred, Repo#{<<"languages">> => []}) || Repo <- AllRepos]).
@@ -148,7 +148,7 @@ get_supported_repos(Cred, Repos) ->
     lists:filtermap(
       fun(Repo) ->
         gadget_utils:is_admin(Repo) andalso
-        gadget_utils:is_public(Repo) andalso
+        (not gadget_utils:is_public(Repo)) andalso
         gadget_utils:is_supported(Repo, Cred)
       end,
       Repos),
