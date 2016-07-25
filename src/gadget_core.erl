@@ -3,7 +3,7 @@
 
 -export([register/3]).
 -export([unregister/3]).
--export([repositories/1]).
+-export([repositories/2]).
 -export([repo_info/2]).
 
 %% @doc registers a repo for processing
@@ -46,8 +46,8 @@ unregister(Repo, Tool, Token) ->
     end,
   gadget_repos_repo:unregister(Repo, Tool).
 
--spec repositories(egithub:credentials()) -> list().
-repositories(Cred) ->
+-spec repositories(egithub:credentials(), binary()) -> list().
+repositories(Cred, Filter) ->
   Opts = #{type => <<"owner">>, per_page => 100},
   {ok, UserOrgsList} = egithub:orgs(Cred),
   UserOrgs = lists:map(fun(#{<<"login">> := OrgName}) -> OrgName end,
@@ -65,16 +65,12 @@ repositories(Cred) ->
     end,
   AllOrgsRepos = lists:flatmap(OrgReposFun, Orgs),
 
-  PublicSupportedRepos =
-    lists:filtermap(
-      fun(Repo) ->
-        gadget_utils:is_admin(Repo) andalso
-        (not gadget_utils:is_public(Repo)) andalso
-        gadget_utils:is_supported(Repo, Cred)
-      end,
-      AllOrgsRepos),
-
-  lists:sort([repo_info(Cred, Repo) || Repo <- PublicSupportedRepos]).
+  case Filter of
+    <<"all">> ->
+      get_all_repos(Cred, AllOrgsRepos);
+    _ ->
+      get_supported_repos(Cred, AllOrgsRepos)
+  end.
 
 -spec repo_info(egithub:credentials(), map()) -> [tuple()].
 repo_info(Cred, Repo) ->
@@ -120,6 +116,10 @@ repo_info(Cred, Repo) ->
   , {status, StatusList}
   ].
 
+%% =============================================================================
+%% Private
+%% =============================================================================
+
 -spec check_result(term()) -> term().
 check_result({error, {"422", _, _}}) ->
   throw(webhook_already_exists);
@@ -129,3 +129,28 @@ check_result({error, {"404", _, _}}) ->
   throw(not_found);
 check_result(Result) ->
   Result.
+
+-spec get_all_repos(Cred::egithub:credentials(), Repos::[map()]) ->
+  list().
+get_all_repos(Cred, Repos) ->
+  AllRepos =
+    [Repo || Repo <- Repos,
+     gadget_utils:is_admin(Repo),
+     gadget_utils:is_public(Repo)],
+
+  lists:sort([
+    repo_info(Cred, Repo#{<<"languages">> => []}) || Repo <- AllRepos]).
+
+-spec get_supported_repos(Cred::egithub:credentials(), Repos::[map()]) ->
+  list().
+get_supported_repos(Cred, Repos) ->
+  SupportedRepos =
+    lists:filtermap(
+      fun(Repo) ->
+        gadget_utils:is_admin(Repo) andalso
+        gadget_utils:is_public(Repo) andalso
+        gadget_utils:is_supported(Repo, Cred)
+      end,
+      Repos),
+
+  lists:sort([repo_info(Cred, Repo) || Repo <- SupportedRepos]).

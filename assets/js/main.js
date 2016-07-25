@@ -42,6 +42,11 @@ $(function() {
     $("#login").on('click', Main.login);
 
     $("button.toggle").on('click', Main.toggle);
+
+    // Repositories filter
+    $("input[type=radio][name=filter]").on('change', function() {
+        $(this).parent().submit();
+    });
 });
 
 
