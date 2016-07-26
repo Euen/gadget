@@ -144,7 +144,7 @@ basic_test(Webhook, Config) ->
 
 -spec valid_organization_repositories_test(Config::config()) -> config().
 valid_organization_repositories_test(Config) ->
-  [Repositories | _] = gadget_core:repositories({'oauth', "mycredentials"}),
+  [Repositories | _] = gadget_core:repositories({'oauth', "mycredentials"}, <<"all">>),
   <<"inaka/harry">> = proplists:get_value(full_name, Repositories),
   Config.
 

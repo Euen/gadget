@@ -24,18 +24,20 @@ init(_Type, Req, _Opts) ->
 handle(Req, State) ->
   case get_user(Req) of
     {ok, User, Cred} ->
+      {Filter, _} = cowboy_req:qs_val(<<"filter">>, Req),
       Name = maps:get(<<"name">>, User, null),
       Username =
         case Name of
           null -> maps:get(<<"login">>, User);
           Name1 -> Name1
         end,
-      Repos =  gadget_core:repositories(Cred),
+      Repos = gadget_core:repositories(Cred, Filter),
       WebhookMap = application:get_env(gadget, webhooks, #{}),
       Tools = maps:keys(WebhookMap),
       Variables = [ {tools, Tools}
                   , {user,  Username}
                   , {repos, Repos}
+                  , {filter, Filter}
                   ],
 
       Headers = [{<<"content-type">>, <<"text/html">>}],
