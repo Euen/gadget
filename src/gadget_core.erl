@@ -18,7 +18,7 @@ register(Repo, Tool, Token) ->
         Result =
           egithub:create_webhook(Cred, Repo, WebhookUrl, ["pull_request"]),
         {ok, _} = check_result(Result),
-        _ = gadget_repos_repo:register(Repo, Tool, Token),
+        _ = gadget_repo_tools_repo:register(Repo, Tool, Token),
         true
       catch
         _ -> false
@@ -44,7 +44,7 @@ unregister(Repo, Tool, Token) ->
       [] -> ok;
       [Id] -> egithub:delete_webhook(Cred, Repo, Id)
     end,
-  gadget_repos_repo:unregister(Repo, Tool).
+  gadget_repo_tools_repo:unregister(Repo, Tool).
 
 -spec repositories(egithub:credentials(), binary()) -> list().
 repositories(Cred, Filter) ->

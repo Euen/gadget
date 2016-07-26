@@ -23,7 +23,7 @@
     },
     {docs,
      [
-      {gadget_repos, gadget_store_mnesia},
+      {gadget_repo_tools, gadget_store_mnesia},
       {gadget_logs, gadget_store_mnesia}
      ]
     },
