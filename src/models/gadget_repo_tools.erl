@@ -4,11 +4,16 @@
 
 -behaviour(sumo_doc).
 
+-type name()  :: binary().
+-type tool()  :: atom().
+-type token() :: binary().
+-export_type([name/0, tool/0, token/0]).
+
 -opaque repo_tool() ::
   #{ id => integer()
-   , name => string()
-   , tool => atom()
-   , token => string()
+   , name => name()
+   , tool => tool()
+   , token => token()
    , created_at => binary()
    }.
 -export_type([repo_tool/0]).
@@ -47,7 +52,7 @@ sumo_wakeup(Doc) ->
 %% PUBLIC API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% @doc creates a new repository
--spec new(string(), atom(), string()) -> repo_tool().
+-spec new(name(), tool(), token()) -> repo_tool().
 new(Name, Tool, Token) ->
   #{ name => Name
    , tool => Tool

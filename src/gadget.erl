@@ -105,7 +105,7 @@ webhook(ToolName, RequestMap) ->
       cxy_ctl:execute_task(webhook, egithub_webhook, event, Args)
   end.
 
--spec get_repo_name(map()) -> string().
+-spec get_repo_name(map()) -> binary().
 get_repo_name(#{body := Body}) ->
   EventData = jiffy:decode(Body, [return_maps]),
   #{<<"repository">> := Repository} = EventData,

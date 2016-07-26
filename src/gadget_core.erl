@@ -1,10 +1,11 @@
 %%% @doc gadget_core module
 -module(gadget_core).
 
--export([register/3]).
--export([unregister/3]).
--export([repositories/2]).
--export([repo_info/2]).
+-export([register/3,
+         unregister/3,
+         sync_repositories/2,
+         filter_repositories/2,
+         repo_info/2]).
 
 %% @doc registers a repo for processing
 -spec register(string(), atom(), string()) -> boolean().
@@ -17,7 +18,23 @@ register(Repo, Tool, Token) ->
       try
         Result =
           egithub:create_webhook(Cred, Repo, WebhookUrl, ["pull_request"]),
-        {ok, _} = check_result(Result),
+        case check_result(Result) of
+          {ok, webhook_already_exists} -> % already exists
+            RepoInfo = gadget_repos_repo:fetch_by_full_name(Repo),
+            % This hook already exists for this repository, so fetch the
+            % updated list of hooks for this repo (avoid the user to sync
+            % all the repositories hooks).
+            _ = sync_repo_hooks(Cred, RepoInfo),
+            ok;
+          {ok, Hook} ->
+            % Hook created on github for this repo. Save info locally
+            % (hooks cache purposes).
+            #{<<"id">> := Id, <<"config">> := #{<<"url">> := Url}} = Hook,
+            RepoInfo = gadget_repos_repo:fetch_by_full_name(Repo),
+            RepoId = gadget_repos:id(RepoInfo),
+            _ = gadget_repo_hooks_repo:register(Id, RepoId, Url),
+            ok
+        end,
         _ = gadget_repo_tools_repo:register(Repo, Tool, Token),
         true
       catch
@@ -26,10 +43,12 @@ register(Repo, Tool, Token) ->
   end.
 
 %% @doc unregisters a repo
--spec unregister(string(), atom(), string()) -> 0|1.
+-spec unregister(binary(), atom(), string()) -> 0|1.
 unregister(Repo, Tool, Token) ->
   Cred = egithub:oauth(Token),
-  {ok, Hooks} = egithub:hooks(Cred, Repo),
+  RepoInfo = gadget_repos_repo:fetch_by_full_name(Repo),
+  RepoId = gadget_repos:id(RepoInfo),
+  Hooks = gadget_repo_hooks_repo:fetch_by_repo_id(RepoId),
   EnabledTools = gadget_utils:active_tools(Hooks),
   HIds =
     [HookId
@@ -42,52 +61,76 @@ unregister(Repo, Tool, Token) ->
   ok =
     case HIds of
       [] -> ok;
-      [Id] -> egithub:delete_webhook(Cred, Repo, Id)
+      [Id] ->
+        ok = egithub:delete_webhook(Cred, Repo, Id),
+        _ = gadget_repo_hooks_repo:unregister(Id),
+        ok
     end,
   gadget_repo_tools_repo:unregister(Repo, Tool).
 
--spec repositories(egithub:credentials(), binary()) -> list().
-repositories(Cred, Filter) ->
+-spec sync_repositories(Cred::egithub:credentials(),
+                        User::gadget_users:user()) -> [gadget_repos:repo()].
+sync_repositories(Cred, User) ->
   Opts = #{type => <<"owner">>, per_page => 100},
   {ok, Repos} = egithub:all_repos(Cred, Opts),
   {ok, Orgs} = egithub:orgs(Cred),
 
+  OrgsOpts = Opts#{type => <<"public">>},
   OrgReposFun =
     fun(#{<<"login">> := OrgName}) ->
-      {ok, OrgRepos} = egithub:all_org_repos(Cred, OrgName, Opts),
+      {ok, OrgRepos} = egithub:all_org_repos(Cred, OrgName, OrgsOpts),
       OrgRepos
     end,
   AllOrgsRepos = lists:flatmap(OrgReposFun, Orgs),
 
-  case Filter of
-    <<"all">> ->
-      get_all_repos(Cred, Repos ++ AllOrgsRepos);
-    _ ->
-      get_supported_repos(Cred, Repos ++ AllOrgsRepos)
-  end.
+  % Get all the public repositories the user is an admin of.
+  % This avoids getting repos we can’t manage anyway.
+  AllRepos =
+    [Repo ||
+     #{<<"private">> := false,
+       <<"permissions">> := #{<<"admin">> := true}} = Repo <-
+     Repos ++ AllOrgsRepos],
 
--spec repo_info(egithub:credentials(), map()) -> [tuple()].
-repo_info(Cred, Repo) ->
-  Name = maps:get(<<"name">>, Repo),
-  FullName = maps:get(<<"full_name">>, Repo),
-  HtmlUrl = maps:get(<<"html_url">>, Repo),
+  % Store the repos in mnesia and associate them with the given user
+  SavedRepos = [register_repo(Repo#{<<"languages">> => []}) ||
+                Repo <- AllRepos], % Cache repos info
+  % Associate repo_ids to the user for future requests
+  RepoIds = [gadget_repos:id(Repo) || Repo <- SavedRepos],
+  ok = associate_repo_ids_to_user(RepoIds, User),
+
+  _ = [sync_repo_languages_and_hooks(Cred, Repo) || Repo <- SavedRepos],
+  SavedRepos.
+
+-spec filter_repositories(Filter::binary(),
+                          Repos::[gadget_repos:repo()]) ->
+  [gadget_repos:repo()].
+filter_repositories(<<"all">>, Repos) ->
+  get_all_repos(Repos);
+filter_repositories(_Filter, Repos) ->
+  get_supported_repos(Repos).
+
+-spec repo_info(Repo::gadget_repos:repo(), Filter::binary()) -> [tuple()].
+repo_info(Repo, Filter) ->
+  Name = gadget_repos:name(Repo),
+  FullName = gadget_repos:full_name(Repo),
+  HtmlUrl = gadget_repos:html_url(Repo),
   {ok, Tools} = application:get_env(gadget, webhooks),
-  RepoLangsSupported = maps:get(<<"languages">>, Repo),
-  Hooks =
-    case egithub:hooks(Cred, FullName) of
-      {ok, HooksResult} -> HooksResult;
-      {error, _} -> []
-    end,
+  RepoLangsSupported = gadget_repos:languages(Repo),
+  Hooks = gadget_repo_hooks_repo:fetch_by_repo_id(gadget_repos:id(Repo)),
 
   Status =
     lists:map(
       fun(#{name := ToolName} = State) ->
         Tool = maps:get(ToolName, Tools),
         ToolLangs = maps:get(languages, Tool),
-        case RepoLangsSupported of
-          [] -> % repo.language = null -> enable all the tools
+        case {RepoLangsSupported, Filter} of
+          {_, <<"all">>} ->
+            % Don't disable "unsupported" tools.
             State;
-          _ ->
+          {[], _} ->
+            % repo.language = null -> enable all the tools
+            State;
+          {_, _} ->
             case RepoLangsSupported -- ToolLangs of
               RepoLangsSupported ->
                 % Current tool does not support any of the languages
@@ -115,8 +158,8 @@ repo_info(Cred, Repo) ->
 %% =============================================================================
 
 -spec check_result(term()) -> term().
-check_result({error, {"422", _, _}}) ->
-  throw(webhook_already_exists);
+check_result({error, {422, _, _}}) ->
+  {ok, webhook_already_exists};
 check_result({error, {"401", _, _}}) ->
   throw(unauthorized);
 check_result({error, {"404", _, _}}) ->
@@ -124,27 +167,81 @@ check_result({error, {"404", _, _}}) ->
 check_result(Result) ->
   Result.
 
--spec get_all_repos(Cred::egithub:credentials(), Repos::[map()]) ->
-  list().
-get_all_repos(Cred, Repos) ->
-  AllRepos =
-    [Repo || Repo <- Repos,
-     gadget_utils:is_admin(Repo),
-     gadget_utils:is_public(Repo)],
+-spec register_repo(Repo::map()) ->
+  gadget_repos:repo().
+register_repo(Repo) ->
+  #{<<"id">> := Id,
+    <<"name">> := Name,
+    <<"full_name">> := FullName,
+    <<"html_url">> := HtmlUrl,
+    <<"private">> := Private,
+    <<"permissions">> := #{<<"admin">> := Admin,
+                           <<"pull">> := Pull,
+                           <<"push">> := Push},
+    <<"languages_url">> := LangsUrl,
+    <<"language">> := Lang,
+    <<"languages">> := Langs} = Repo,
+gadget_repos_repo:register(
+  Id, Name, FullName, HtmlUrl, Private, Admin, Pull, Push, LangsUrl, Lang, Langs
+  ).
 
-  lists:sort([
-    repo_info(Cred, Repo#{<<"languages">> => []}) || Repo <- AllRepos]).
+%% @private
+-spec associate_repo_ids_to_user(RepoIds::[gadget_users:repo_ids()],
+                                 User::gadget_users:user()) ->
+  ok.
+associate_repo_ids_to_user(RepoIds, User) ->
+  UserId = gadget_users:id(User),
+  UserName = gadget_users:username(User),
+  _ = gadget_users_repo:register(UserId, UserName, RepoIds),
+  ok.
 
--spec get_supported_repos(Cred::egithub:credentials(), Repos::[map()]) ->
-  list().
-get_supported_repos(Cred, Repos) ->
-  SupportedRepos =
-    lists:filtermap(
-      fun(Repo) ->
-        gadget_utils:is_admin(Repo) andalso
-        gadget_utils:is_public(Repo) andalso
-        gadget_utils:is_supported(Repo, Cred)
-      end,
-      Repos),
+-spec sync_repo_languages_and_hooks(Cred::egithub:credentials(),
+                                    Repo::gadget_repos:repo()) ->
+  ok.
+sync_repo_languages_and_hooks(Cred, Repo) ->
+  ok = sync_repo_languages(Cred, Repo),
+  _ = sync_repo_hooks(Cred, Repo),
+  ok.
 
-  lists:sort([repo_info(Cred, Repo) || Repo <- SupportedRepos]).
+-spec sync_repo_languages(Cred::egithub:credentials(),
+                          Repo::gadget_repos:repo()) ->
+  ok.
+sync_repo_languages(Cred, Repo) ->
+  RepoId = gadget_repos:id(Repo),
+  FullName = gadget_repos:full_name(Repo),
+  {ok, LanguagesMap} = egithub:languages(Cred, binary_to_list(FullName)),
+  Languages = maps:keys(LanguagesMap),
+  ok = gadget_repos_repo:update_languages(RepoId, Languages).
+
+-spec sync_repo_hooks(Cred::egithub:credentials(), Repo::gadget_repos:repo()) ->
+  [gadget_repo_hooks:repo_hook()].
+sync_repo_hooks(Cred, Repo) ->
+  RepoId = gadget_repos:id(Repo),
+  FullName = gadget_repos:full_name(Repo),
+  case egithub:hooks(Cred, FullName) of
+    {ok, HooksResult} ->
+      % Store and return the list of stored Hooks for the given repo
+      [gadget_repo_hooks_repo:register(Id, RepoId, Url) ||
+       #{<<"id">> := Id, <<"config">> := #{<<"url">> := Url}} <-
+       HooksResult];
+    {error, _} ->
+      []
+  end.
+
+-spec get_all_repos(Repos::[gadget_repos:repo()]) ->
+  [gadget_repos:repo()].
+get_all_repos(Repos) ->
+  [Repo || Repo <- Repos,
+   gadget_utils:is_admin(Repo),
+   gadget_utils:is_public(Repo)].
+
+-spec get_supported_repos(Repos::[gadget_repos:repo()]) ->
+  [gadget_repos:repo()].
+get_supported_repos(Repos) ->
+  lists:filtermap(
+    fun(Repo) ->
+      gadget_utils:is_admin(Repo) andalso
+      gadget_utils:is_public(Repo) andalso
+      gadget_utils:is_supported(Repo)
+    end,
+    Repos).
