@@ -47,6 +47,12 @@ $(function() {
     $("input[type=radio][name=filter]").on('change', function() {
         $(this).parent().submit();
     });
+
+    // Sync repositories list
+    $("button#sync_repos").on('click', function() {
+      $("input#sync").val("1");
+      $("form#filter_and_sync_repos").submit();
+    });
 });
 
 

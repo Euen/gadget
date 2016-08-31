@@ -3,7 +3,27 @@
 {% block title %}Repos{% endblock %}
 
 {% block content %}
-    <h1>{{ user }}'s repos</h1>
+    <div>
+      <button type="button" id="sync_repos" style="float: right;">Sync</button>
+      <h1>{{ user }}'s repos</h1>
+    </div>
+
+    <div class="section {{filter}}">
+      <form action="/repos" method="GET" id="filter_and_sync_repos">
+        {% if filter == "all" %}
+          <input type="radio" name="filter" id="supported_only" value="">
+          <label for="supported_only">Supported languages only</label>
+          <input type="radio" name="filter" id="all_repos" value="all" checked>
+          <label for="all_repos">All repos</label>
+        {% else %}
+          <input type="radio" name="filter" id="supported_only" value="" checked>
+          <label for="supported_only">Supported languages only</label>
+          <input type="radio" name="filter" id="all_repos" value="all">
+          <label for="all_repos">All repos</label>
+        {% endif %}
+      <input type="hidden" id="sync" name="sync" value="">
+      </form>
+    </div>
 
     <div class="section {{filter}}">
       <form action="/repos" method="GET">

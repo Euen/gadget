@@ -128,8 +128,8 @@ basic_test(Webhook, Config) ->
   Header =
     #{  <<"Content-Type">> => <<"application/json">>
       , <<"x-github-event">> =>  <<"ping">>},
-  Token = gadget_test_utils:get_github_client_secret(),
-  _ = gadget_repos_repo:register("gadget-tester/user-repo", Webhook, Token),
+  Token = list_to_binary(gadget_test_utils:get_github_client_secret()),
+  _ = gadget_repo_tools_repo:register(<<"gadget-tester/user-repo">>, Webhook, Token),
   {ok, JsonBody} =
     file:read_file("../../test/github_payloads/initial-payload.json"),
   {ok, Response} =

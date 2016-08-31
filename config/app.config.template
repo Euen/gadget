@@ -23,8 +23,11 @@
     },
     {docs,
      [
+      {gadget_repo_tools, gadget_store_mnesia},
+      {gadget_logs, gadget_store_mnesia},
       {gadget_repos, gadget_store_mnesia},
-      {gadget_logs, gadget_store_mnesia}
+      {gadget_users, gadget_store_mnesia},
+      {gadget_repo_hooks, gadget_store_mnesia}
      ]
     },
     {events, []}
