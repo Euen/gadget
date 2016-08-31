@@ -25,22 +25,6 @@
       </form>
     </div>
 
-    <div class="section {{filter}}">
-      <form action="/repos" method="GET">
-        {% if filter == "all" %}
-          <input type="radio" name="filter" id="supported_only" value="">
-          <label for="supported_only">Supported languages only</label>
-          <input type="radio" name="filter" id="all_repos" value="all" checked>
-          <label for="all_repos">All repos</label>
-        {% else %}
-          <input type="radio" name="filter" id="supported_only" value="" checked>
-          <label for="supported_only">Supported languages only</label>
-          <input type="radio" name="filter" id="all_repos" value="all">
-          <label for="all_repos">All repos</label>
-        {% endif %}
-      </form>
-    </div>
-
     <div class="repos section">
       <table class="tools">
         <thead>

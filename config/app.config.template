@@ -39,8 +39,8 @@
     {sdk_path, "/usr/local/android-sdk-linux"},
     %% OAuth
     {github_scope, "repo,repo:status,read:org"},
-    {github_client_id, "bcn98345nv2098682c69"},
-    {github_client_secret, "98vb98nbsbfgdjdlh87s986s08724958nfgdv"},
+    {github_client_id, "78adda4435a3c632ccd1"},
+    {github_client_secret, "3d5ca2b8dd4611aa3505fd5b32511bcd5c170009"},
     {status_details_url, "http://gadget-internal.inakalabs.com/webhook/status-details/"},
     %% Webhooks
     {webhooks,

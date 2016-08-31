@@ -86,7 +86,7 @@ sync_repositories(Cred, User) ->
   % Get all the private repositories the user is an admin of.
   AllRepos =
     [Repo ||
-     #{<<"private">> := private,
+     #{<<"private">> := true,
        <<"permissions">> := #{<<"admin">> := true}} = Repo <-
      Repos ++ AllOrgsRepos],
 
@@ -180,9 +180,8 @@ register_repo(Repo) ->
     <<"languages_url">> := LangsUrl,
     <<"language">> := Lang,
     <<"languages">> := Langs} = Repo,
-gadget_repos_repo:register(
-  Id, Name, FullName, HtmlUrl, Private, Admin, Pull, Push, LangsUrl, Lang, Langs
-  ).
+  gadget_repos_repo:register(Id, Name, FullName, HtmlUrl, Private, Admin,
+                             Pull, Push, LangsUrl, Lang, Langs).
 
 %% @private
 -spec associate_repo_ids_to_user(RepoIds::[gadget_users:repo_ids()],

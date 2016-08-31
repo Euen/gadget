@@ -62,9 +62,15 @@ end_per_suite(Config) ->
 -spec init_per_testcase(TestCase::atom(), Config::config()) -> config().
 init_per_testcase(valid_organization_repositories_test, Config) ->
   ok = meck:new(egithub, [passthrough]),
+  ok = meck:new(gadget_core, [passthrough]),
   ok = meck:expect(egithub, orgs, fun egithub_orgs/1),
+  ok = meck:expect(egithub, all_repos, fun egithub_all_repos/2),
   ok = meck:expect(egithub, all_org_repos, fun egithub_all_org_repos/3),
   ok = meck:expect(egithub, hooks, fun egithub_hooks/2),
+  ok = meck:expect( gadget_core
+                  , sync_repositories
+                  , fun gadget_core_sync_repositories/2
+                  ),
   Config;
 init_per_testcase(_TestCase, Config) ->
   Config.
@@ -74,6 +80,7 @@ init_per_testcase(_TestCase, Config) ->
 -spec end_per_testcase(TestCase::atom(), Config::config()) -> config().
 end_per_testcase(valid_organization_repositories_test, Config) ->
   ok = meck:unload(egithub),
+  ok = meck:unload(gadget_core),
   Config;
 end_per_testcase(_TestCase, Config) ->
   Config.
@@ -144,8 +151,10 @@ basic_test(Webhook, Config) ->
 
 -spec valid_organization_repositories_test(Config::config()) -> config().
 valid_organization_repositories_test(Config) ->
-  [Repositories | _] = gadget_core:repositories({'oauth', "mycredentials"}, <<"all">>),
-  <<"inaka/harry">> = proplists:get_value(full_name, Repositories),
+  User = gadget_users:new(123, <<"test-user">>, []),
+  [#{<<"full_name">> := FullName} | _] =
+    gadget_core:sync_repositories( {'oauth', "mycredentials"}, User),
+  FullName = <<"inaka/harry">>,
   Config.
 
 -spec valid_organization_payload_test(Config::config()) -> config().
@@ -175,12 +184,19 @@ invalid_organization_payload_test(Config) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PRIVATE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec egithub_orgs(Cred::tuple()) -> {ok, [map()]}.
+
+-spec egithub_orgs(Cred::tuple()) ->
+  {ok, [map()]}.
 egithub_orgs(_Cred) ->
   {ok, [Orgs | _]} = file:consult("../../test/meck_data/egithub__orgs.txt"),
   {ok, Orgs}.
 
--spec egithub_all_org_repos(Cred::tuple, OrgName::binary(), Opts::map()) ->
+-spec egithub_all_repos(Cred::tuple(), Opts::map()) ->
+  {ok, []}.
+egithub_all_repos(_Cred, _Opts) ->
+  {ok, []}.
+
+-spec egithub_all_org_repos(Cred::tuple(), OrgName::binary(), Opts::map()) ->
   {ok, [map()]}.
 egithub_all_org_repos(_Cred, <<"inaka">>, _Opts) ->
   {ok, [OrgRepos | _]} =
@@ -188,7 +204,29 @@ egithub_all_org_repos(_Cred, <<"inaka">>, _Opts) ->
   {ok, OrgRepos};
 egithub_all_org_repos(_Cred, _OrgName, _Opts) -> {ok, []}.
 
--spec egithub_hooks(Cred::tuple(), FullName::binary()) -> {ok, [map()]}.
+-spec egithub_hooks(Cred::tuple(), FullName::binary()) ->
+  {ok, [map()]}.
 egithub_hooks(_Cred, _FullName) ->
   {ok, [Hooks | _]} = file:consult("../../test/meck_data/egithub__hooks.txt"),
   {ok, Hooks}.
+
+-spec gadget_core_sync_repositories(Cred::tuple(), User::map()) ->
+  [gadget_repos:repo()].
+gadget_core_sync_repositories(Cred, _User) ->
+  Opts = #{type => <<"owner">>, per_page => 100},
+  {ok, Repos} = egithub:all_repos(Cred, Opts),
+  {ok, Orgs} = egithub:orgs(Cred),
+
+  OrgsOpts = Opts#{type => <<"public">>},
+  OrgReposFun =
+    fun(#{<<"login">> := OrgName}) ->
+      {ok, OrgRepos} = egithub:all_org_repos(Cred, OrgName, OrgsOpts),
+      OrgRepos
+    end,
+  AllOrgsRepos = lists:flatmap(OrgReposFun, Orgs),
+
+  % Get all the private repositories the user is an admin of.
+  [Repo ||
+   #{<<"private">> := true,
+     <<"permissions">> := #{<<"admin">> := true}} = Repo <-
+   Repos ++ AllOrgsRepos].
