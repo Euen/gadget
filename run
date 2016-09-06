@@ -1,2 +1,2 @@
 #!/bin/sh
-erl -pa ../gadget/ebin deps/*/ebin -name gadget@127.0.0.1 -setcookie gadget -s gadget -config config/app.config -noshell
+erl -pa ../gadget/ebin deps/*/ebin -name gadget@172.4.0.11 -setcookie gadget -s gadget -config config/app.config -noshell
