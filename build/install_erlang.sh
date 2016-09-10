@@ -1,9 +1,10 @@
 #!/bin/bash
 
 cd /tmp
-wget http://erlang.org/download/otp_src_18.1.tar.gz
-tar -xvzf otp_src_18.1.tar.gz
-cd otp_src_18.1
+wget https://github.com/erlang/otp/archive/OTP-19.0.5.zip
+unzip OTP-19.0.5.zip
+cd otp-OTP-19.0.5/
+./otp_build autoconf
 ./configure
 make
 make install

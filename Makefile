@@ -3,29 +3,27 @@ PROJECT = gadget
 CONFIG ?= config/app.config
 ERLDOCS ?= ./erldocs
 
-DEPS = elvis katana cowboy lager erlydtl egithub shotgun eper xref_runner sumo_db epocxy jiffy
+DEPS = elvis katana cowboy lager erlydtl egithub hackney eper xref_runner sumo_db epocxy jiffy
 # rebar has to be the last dep on the list, in order to avoid conflicts when compiling
 # rebar-ized dependencies
 DEPS += rebar
 TEST_DEPS = mixer katana_test
 SHELL_DEPS = sync
-LOCAL_DEPS = tools compiler syntax_tools common_test inets test_server dialyzer wx mnesia
+LOCAL_DEPS = tools compiler syntax_tools common_test inets dialyzer wx mnesia
 
 dep_jiffy = git https://github.com/davisp/jiffy.git 0.14.8
 dep_sync = git https://github.com/rustyio/sync.git 9c78e7b
 dep_eper = git https://github.com/massemanet/eper.git 0.96.4
-dep_egithub = hex 0.2.8
+dep_egithub = hex 0.2.9
 dep_elvis = git https://github.com/inaka/elvis.git 0.2.11
 dep_cowboy = git https://github.com/ninenines/cowboy.git 1.0.4
-dep_lager = git https://github.com/basho/lager.git 3.2.0
+dep_lager = git https://github.com/basho/lager.git 3.2.1
 dep_erlydtl = git https://github.com/erlydtl/erlydtl.git 0.11.1
-# Don't upgrade shotgun's version until we start using cowboy 2.0.x.
-# Shotgun 0.2.2 uses cowlib 1.0.2 and cowboy 1.0.4 uses cowlib 1.3.0.
-dep_shotgun = git https://github.com/inaka/shotgun.git 0.2.0
-dep_rebar = git https://github.com/erlang/rebar3.git 3.1.0
+dep_hackney = hex 1.6.1
+dep_rebar = git https://github.com/erlang/rebar3.git 3.3.1
 dep_xref_runner = git https://github.com/inaka/xref_runner.git 0.2.6
 dep_sumo_db = git https://github.com/inaka/sumo_db.git 0.5.0
-dep_epocxy = git https://github.com/duomark/epocxy.git 1.0.0
+dep_epocxy = git https://github.com/duomark/epocxy.git master
 dep_katana = git https://github.com/inaka/erlang-katana.git 0.2.23
 dep_katana_test = git https://github.com/inaka/katana-test.git 0.0.5
 

@@ -41,7 +41,7 @@
                          }.
 -type tool_info() :: #{ name => atom()
                       , status => on | off
-                      , hook_id => binary()
+                      , hook_id => integer() | undefined
                       }.
 -type tool() :: xref | elvis | compiler | dialyzer | lewis.
 -type buildtool() :: makefile | rebar3.
@@ -50,19 +50,23 @@
 
 
 %% @doc Retrieves the list of active webhook tools
--spec active_tools([map()]) -> [tool_info()].
+-spec active_tools([gadget_repo_hooks:repo_hook()]) -> [tool_info()].
 active_tools(Hooks) ->
   Tools = application:get_env(gadget, webhooks, #{}),
   [tool_info(ToolName, Tools, Hooks) || ToolName <- maps:keys(Tools)].
 
 %% @doc Retrieves information about a tool related to a particular repo
--spec tool_info(atom(), map(), [map()]) -> tool_info().
+-spec tool_info(atom(), map(), [gadget_repo_hooks:repo_hook()]) -> tool_info().
+tool_info(ToolName, _Tools, []) ->
+  #{ name => ToolName
+   , status => off
+   , hook_id => undefined
+   };
 tool_info(ToolName, Tools, Hooks) ->
   ToolUrl = maps:get(url, maps:get(ToolName, Tools)),
   Fun =
-    fun (RepoHook) when is_map(RepoHook) ->
-          list_to_binary(ToolUrl) == gadget_repo_hooks:url(RepoHook);
-        (_) -> false
+    fun (RepoHook) ->
+          list_to_binary(ToolUrl) == gadget_repo_hooks:url(RepoHook)
     end,
   FilteredHooks = lists:filter(Fun, Hooks),
   Status =
@@ -361,7 +365,8 @@ status_details_url(Tool, PrNumber, Id) ->
 
 -spec save_status_log(atom(), string(), string(), integer()) -> string().
 save_status_log(Tool, Lines, Repo, PrNumber) ->
-  #{id := Id} = gadget_logs_repo:create(Tool, Repo, PrNumber, Lines),
+  Log = gadget_logs_repo:create(Tool, Repo, PrNumber, Lines),
+  Id = gadget_logs:id(Log),
   status_details_url(Tool, PrNumber, Id).
 
 -spec report_error(atom(), list(), string(), integer(), string(), integer()) ->

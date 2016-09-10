@@ -43,7 +43,10 @@ handle(Req, State) ->
 terminate(_Reason, _Req, _State) -> ok.
 
 %% internal
--spec process_request(binary(), map(), cowboy_req:req(), state()) ->
+-spec process_request(binary(),
+                      egithub_webhook:request(),
+                      cowboy_req:req(),
+                      state()) ->
   {ok, cowboy_req:req(), state()}.
 process_request(ToolName, RequestMap, Req3, State) ->
   case gadget:webhook(ToolName, RequestMap) of
