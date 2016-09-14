@@ -6,10 +6,11 @@
 
 -opaque log() ::
   #{ id => integer()
-   , tool => string()
+   , tool => string() | binary() | atom()
    , repository => string()
    , pr_number => integer()
    , description => string()
+   , back_url => string()
    , created_at => binary()
    }.
 -export_type([log/0]).
@@ -55,6 +56,7 @@ new(Tool, Repo, Pr, Description) ->
    , repository => Repo
    , pr_number => Pr
    , description => Description
+   , back_url => ""
    , created_at => ktn_date:now_human_readable()
    }.
 
