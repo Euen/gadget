@@ -4,19 +4,3 @@ services:
       build: .
       command: /usr/sbin/runsvdir-start
       container_name: gadget-internal_web
-      ports:
-       - "8084:8084"
-      volumes:
-        - /data/gadget-internal:/gadget/db
-      networks:
-        app_net:
-          ipv4_address: 172.4.0.10
-
-networks:
-  app_net:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-      - subnet: 172.4.0.0/24
-        gateway: 172.4.0.1

@@ -56,16 +56,16 @@ terminate(_Reason, _Req, _State) -> ok.
 access_token(Code) ->
   {ok, ClientId} = application:get_env(gadget, github_client_id),
   {ok, ClientSecret} = application:get_env(gadget, github_client_secret),
-  Url = "/login/oauth/access_token",
-  Headers = #{ "Content-Type" => "application/x-www-form-urlencoded"
-             , "Accept" => "application/json"},
+  Url = "https://github.com/login/oauth/access_token",
+  Headers = [ {"Content-Type", "application/x-www-form-urlencoded"}
+            , {"Accept", "application/json"}],
   Body = ["code=", Code,
           "&client_id=", ClientId,
           "&client_secret=", ClientSecret],
-  {ok, Pid} = shotgun:open("github.com", 443, https),
   Response =
-    case shotgun:post(Pid, Url, Headers, Body, #{}) of
-      {ok, #{status_code := 200, body := RespBody}} ->
+    case hackney:post(Url, Headers, Body, []) of
+      {ok, 200, _RespHeaders, ClientRef} ->
+        {ok, RespBody} = hackney:body(ClientRef),
         JsonBody = jiffy:decode(RespBody, [return_maps]),
         case maps:is_key(<<"access_token">>, JsonBody) of
           true ->
@@ -74,10 +74,9 @@ access_token(Code) ->
           false ->
             {error, RespBody}
         end;
-      {ok, #{status_code := Status}} ->
-        {error, Status};
+      {ok, StatusCode, _RespHeaders, _ClientRef} ->
+        {error, StatusCode};
       {error, Reason} ->
         {error, Reason}
     end,
-  shotgun:close(Pid),
   Response.
