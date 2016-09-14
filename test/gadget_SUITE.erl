@@ -71,6 +71,7 @@ init_per_testcase(valid_organization_repositories_test, Config) ->
                   , sync_repositories
                   , fun gadget_core_sync_repositories/2
                   ),
+  ok = meck:expect(gadget_repos, full_name, fun gadget_repos_full_name/1),
   Config;
 init_per_testcase(_TestCase, Config) ->
   Config.
@@ -152,9 +153,9 @@ basic_test(Webhook, Config) ->
 -spec valid_organization_repositories_test(Config::config()) -> config().
 valid_organization_repositories_test(Config) ->
   User = gadget_users:new(123, <<"test-user">>, []),
-  [#{<<"full_name">> := FullName} | _] =
+  [Repo | _] =
     gadget_core:sync_repositories( {'oauth', "mycredentials"}, User),
-  FullName = <<"inaka/harry">>,
+  <<"inaka/harry">> = gadget_repos:full_name(Repo),
   Config.
 
 -spec valid_organization_payload_test(Config::config()) -> config().
@@ -230,3 +231,8 @@ gadget_core_sync_repositories(Cred, _User) ->
    #{<<"private">> := true,
      <<"permissions">> := #{<<"admin">> := true}} = Repo <-
    Repos ++ AllOrgsRepos].
+
+-spec gadget_repos_full_name(Repo::map()) ->
+  binary().
+gadget_repos_full_name(Repo) ->
+  maps:get(<<"full_name">>, Repo).

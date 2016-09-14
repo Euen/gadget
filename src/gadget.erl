@@ -86,7 +86,7 @@ start() ->
   application:ensure_all_started(gadget).
 
 %% @doc runs a particular webhook on a PR
--spec webhook(binary(), map()) -> ok | {error, term()}.
+-spec webhook(binary(), egithub_webhook:request()) -> ok | {error, term()}.
 webhook(ToolName, RequestMap) ->
   #{ mod := Mod
    , tool := Tool
