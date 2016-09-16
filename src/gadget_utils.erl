@@ -221,7 +221,10 @@ rebar3_command_path(RepoDir) ->
   Rebar3Included = exists_file_in_repo(RepoDir, "rebar3"),
   case Rebar3Included of
     true -> filename:join(RepoDir, "rebar3");
-    false -> filename:absname("deps/rebar/rebar3")
+    false ->
+      Rebar3Path = run_command(["which rebar3"]),
+      % Remove new line character
+      string:substr(Rebar3Path, 1, length(Rebar3Path) - 1)
   end.
 
 -spec default_verbosity(makefile | rebar | rebar3) -> string().
