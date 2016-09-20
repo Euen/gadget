@@ -22,3 +22,5 @@ elvis
 _build/
 rebar.lock
 ssh/
+compile_commands.json
+gadget_*_plt
