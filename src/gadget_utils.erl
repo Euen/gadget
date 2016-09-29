@@ -396,13 +396,14 @@ report_error( Tool, [#{commit_id := CommitId} | _] = Messages, Repo, ExitStatus
                          GithubFiles::[egithub_webhook:file()],
                          RepoName::string(),
                          Number::integer()) ->
-  {error, {failed, integer()}} |
   {error, {failed, integer()}, string()} |
   {ok, [map()], string()}.
 catch_error_source(Output, ExitStatus, Tool, GithubFiles, RepoName, Number) ->
   Lines = output_to_lines(Output),
   case error_source(Lines, Tool) of
-    unknown -> {error, {failed, ExitStatus}};
+    unknown ->
+      DetailsUrl = save_status_log(Tool, Output, RepoName, Number),
+      {error, {failed, ExitStatus}, DetailsUrl};
     Tool ->
       Comments = extract_errors(Lines),
       ToolName = capitalize(atom_to_binary(Tool, utf8)),
