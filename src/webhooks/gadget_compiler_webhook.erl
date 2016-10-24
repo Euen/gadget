@@ -51,7 +51,7 @@ handle_error(Error, ReqData, GithubFiles) ->
 
   {Output, ExitStatus} =
     case Error of
-      {badmatch,{error,{Status, Out, _}}} -> {Out, Status};
+      {badmatch, {error, {Status, Out, _}}} -> {Out, Status};
       {error, {status, Status, Out}} -> {Out, Status};
       FullErr -> {FullErr, 1}
     end,

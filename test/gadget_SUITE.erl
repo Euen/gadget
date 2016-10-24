@@ -132,28 +132,29 @@ basic_test(Webhook, Config) ->
 
 -spec github_fail_with_compiler(config()) -> ok.
 github_fail_with_compiler(_Config) ->
-  github_fail_with_tool(gadget_compiler_webhook).
+  github_fail_with_tool(<<"compiler">>).
 
 -spec github_fail_with_dialyzer(config()) -> ok.
 github_fail_with_dialyzer(_Config) ->
-  github_fail_with_tool(gadget_dialyzer_webhook).
+  github_fail_with_tool(<<"dialyzer">>).
 
 -spec github_fail_with_elvis(config()) -> ok.
 github_fail_with_elvis(_Config) ->
-  github_fail_with_tool(gadget_elvis_webhook).
+  github_fail_with_tool(<<"elvis">>).
 
 -spec github_fail_with_lewis(config()) -> ok.
 github_fail_with_lewis(_Config) ->
-  github_fail_with_tool(gadget_lewis_webhook).
+  github_fail_with_tool(<<"lewis">>).
 
 -spec github_fail_with_xref(config()) -> ok.
 github_fail_with_xref(_Config) ->
-  github_fail_with_tool(gadget_xref_webhook).
+  github_fail_with_tool(<<"xref">>).
 
--spec github_fail_with_tool(atom()) -> ok.
-github_fail_with_tool(Tool) ->
+% Emulate a 404 response of GitHub and verify that exist a status details link
+-spec github_fail_with_tool(binary()) -> ok.
+github_fail_with_tool(ToolName) ->
+  #{mod := Tool} = gadget_utils:webhook_info(ToolName),
   {ok, [RequestMap]} = file:consult("../../test/request_map.txt"),
-  ToolName = <<"compiler">>,
   meck:new(egithub, [passthrough]),
   meck:new(Tool, [passthrough]),
 
@@ -161,9 +162,7 @@ github_fail_with_tool(Tool) ->
   PullReqFiles = fun(_, _, _) -> {ok, GithubFiles} end,
   meck:expect(egithub, pull_req_files, PullReqFiles),
 
-  {ok, [Error]} = file:consult("../../test/event_error.txt"),
-  ErrorFun = fun(_, _, _) -> throw(Error) end,
-  meck:expect(Tool, handle_pull_request, ErrorFun),
+  meck:expect(Tool, handle_pull_request, fun fail/3),
 
   try
     ok = gadget:webhook(ToolName, RequestMap)
@@ -173,3 +172,10 @@ github_fail_with_tool(Tool) ->
     meck:unload(egithub),
     meck:unload(Tool)
   end.
+
+-spec fail( egithub:credentials()
+          , egithub_webhook:req_data()
+          , [egithub_webhook:file()]) -> no_return().
+fail(_, _, _) ->
+  {ok, [Error]} = file:consult("../../test/event_error.txt"),
+  throw(Error).
