@@ -17,6 +17,11 @@
         , valid_organization_payload_test/1
         , invalid_organization_payload_test/1]).
 -export([test_lewis/1]).
+-export([github_fail_with_compiler/1]).
+-export([github_fail_with_dialyzer/1]).
+-export([github_fail_with_elvis/1]).
+-export([github_fail_with_lewis/1]).
+-export([github_fail_with_xref/1]).
 
 -type config() :: [{atom(), term()}].
 
@@ -137,7 +142,9 @@ basic_test(Webhook, Config) ->
     #{  <<"Content-Type">> => <<"application/json">>
       , <<"x-github-event">> =>  <<"ping">>},
   Token = list_to_binary(gadget_test_utils:get_github_client_secret()),
-  _ = gadget_repo_tools_repo:register(<<"gadget-tester/user-repo">>, Webhook, Token),
+  _ = gadget_repo_tools_repo:register( <<"gadget-tester/user-repo">>
+                                     , Webhook
+                                     , Token),
   {ok, JsonBody} =
     file:read_file("../../test/github_payloads/initial-payload.json"),
   {ok, Response} =
@@ -181,6 +188,26 @@ invalid_organization_payload_test(Config) ->
     gadget_test_utils:api_call(get, "/webhook/compiler/", Header, JsonBody),
   #{ status_code := 403, body := <<"Event not  processed.">>} = Response,
   Config.
+
+-spec github_fail_with_compiler(config()) -> ok.
+github_fail_with_compiler(_Config) ->
+  github_fail_with_tool(<<"compiler">>).
+
+-spec github_fail_with_dialyzer(config()) -> ok.
+github_fail_with_dialyzer(_Config) ->
+  github_fail_with_tool(<<"dialyzer">>).
+
+-spec github_fail_with_elvis(config()) -> ok.
+github_fail_with_elvis(_Config) ->
+  github_fail_with_tool(<<"elvis">>).
+
+-spec github_fail_with_lewis(config()) -> ok.
+github_fail_with_lewis(_Config) ->
+  github_fail_with_tool(<<"lewis">>).
+
+-spec github_fail_with_xref(config()) -> ok.
+github_fail_with_xref(_Config) ->
+  github_fail_with_tool(<<"xref">>).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PRIVATE
@@ -236,3 +263,33 @@ gadget_core_sync_repositories(Cred, _User) ->
   binary().
 gadget_repos_full_name(Repo) ->
   maps:get(<<"full_name">>, Repo).
+
+% Emulate a 404 response of GitHub and verify that exist a status details link
+-spec github_fail_with_tool(binary()) -> ok.
+github_fail_with_tool(ToolName) ->
+  #{mod := Tool} = gadget_utils:webhook_info(ToolName),
+  {ok, [RequestMap]} = file:consult("../../test/request_map.txt"),
+  meck:new(egithub, [passthrough]),
+  meck:new(Tool, [passthrough]),
+
+  {ok, GithubFiles} = file:consult("../../test/github_files.txt"),
+  PullReqFiles = fun(_, _, _) -> {ok, GithubFiles} end,
+  meck:expect(egithub, pull_req_files, PullReqFiles),
+
+  meck:expect(Tool, handle_pull_request, fun fail/3),
+
+  try
+    ok = gadget:webhook(ToolName, RequestMap)
+  catch
+    _:{badmatch,{error,{404, _, _}}} -> ok
+  after
+    meck:unload(egithub),
+    meck:unload(Tool)
+  end.
+
+-spec fail( egithub:credentials()
+          , egithub_webhook:req_data()
+          , [egithub_webhook:file()]) -> no_return().
+fail(_, _, _) ->
+  {ok, [Error]} = file:consult("../../test/event_error.txt"),
+  throw(Error).
