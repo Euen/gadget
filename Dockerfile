@@ -46,10 +46,6 @@ RUN echo y | android update sdk --no-ui --all --filter "$(cat /android_sdk_compo
 COPY build/install_erlang.sh .
 RUN ./install_erlang.sh
 
-COPY build/install_quickcheck.sh .
-COPY build/install_quickcheck.escript /tmp/
-RUN ./install_quickcheck.sh
-
 #INSTALL Rebar3
 RUN wget https://s3.amazonaws.com/rebar3/rebar3
 RUN mv rebar3 /usr/local/bin
@@ -74,6 +70,8 @@ RUN      mkdir -p /gadget/dump
 COPY     ssh/* /root/.ssh/
 
 
+RUN rm -rf _build
+RUN rebar3 clean
 RUN rebar3 compile
 COPY build/sys.config /gadget/config/app.config
 COPY build/run.sh /etc/sv/gadget/run
