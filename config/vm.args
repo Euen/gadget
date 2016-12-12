@@ -1,5 +1,5 @@
 ## Name of the node
--name gadget_internal@127.0.0.1
+-name gadget_internal@172.4.0.10
 
 ## Cookie for distributed erlang
 -setcookie gadget_internal

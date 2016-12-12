@@ -14,7 +14,7 @@
     , sasl
     , cowboy
     , lager
-    , shotgun
+    , hackney
     , elvis
     , erlydtl
     , egithub

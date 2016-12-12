@@ -5,7 +5,7 @@
         , tool_info/3
         , is_public/1
         , is_admin/1
-        , is_supported/2
+        , is_supported/1
         , ensure_repo_dir/1
         , clone_repo/3
         , ensure_dir_deleted/1
@@ -26,6 +26,8 @@
         , default_verbosity/1
         , exists_file_in_repo/2
         , rebar3_command_path/1
+        , get_username/1
+        , now_datetime/0
         ]).
 
 -type comment() :: #{file   => string(),
@@ -39,7 +41,7 @@
                          }.
 -type tool_info() :: #{ name => atom()
                       , status => on | off
-                      , hook_id => binary()
+                      , hook_id => integer() | undefined
                       }.
 -type tool() :: xref | elvis | compiler | dialyzer | lewis.
 -type buildtool() :: makefile | rebar3.
@@ -48,19 +50,23 @@
 
 
 %% @doc Retrieves the list of active webhook tools
--spec active_tools([map()]) -> [tool_info()].
+-spec active_tools([gadget_repo_hooks:repo_hook()]) -> [tool_info()].
 active_tools(Hooks) ->
   Tools = application:get_env(gadget, webhooks, #{}),
   [tool_info(ToolName, Tools, Hooks) || ToolName <- maps:keys(Tools)].
 
 %% @doc Retrieves information about a tool related to a particular repo
--spec tool_info(atom(), map(), [map()]) -> tool_info().
+-spec tool_info(atom(), map(), [gadget_repo_hooks:repo_hook()]) -> tool_info().
+tool_info(ToolName, _Tools, []) ->
+  #{ name => ToolName
+   , status => off
+   , hook_id => undefined
+   };
 tool_info(ToolName, Tools, Hooks) ->
   ToolUrl = maps:get(url, maps:get(ToolName, Tools)),
   Fun =
-    fun (#{<<"config">> := #{<<"url">> := HookUrl}}) ->
-      list_to_binary(ToolUrl) == HookUrl;
-        (_) -> false
+    fun (RepoHook) ->
+      list_to_binary(ToolUrl) == gadget_repo_hooks:url(RepoHook)
     end,
   FilteredHooks = lists:filter(Fun, Hooks),
   Status =
@@ -72,8 +78,7 @@ tool_info(ToolName, Tools, Hooks) ->
   HookId =
     case Status of
       on ->
-        #{<<"id">> := Id} = hd(FilteredHooks),
-        Id;
+        gadget_repo_hooks:id(hd(FilteredHooks));
       off -> undefined
     end,
 
@@ -83,33 +88,39 @@ tool_info(ToolName, Tools, Hooks) ->
    }.
 
 %% @doc is the repo public?
--spec is_public(map()) -> boolean().
-is_public(#{<<"private">> := Private}) -> not Private.
+-spec is_public(Repo::gadget_repos:repo()) -> boolean().
+is_public(Repo) ->
+  not gadget_repos:private(Repo).
 
 %% @doc is the user an admin for that organization repo?
--spec is_admin(map()) -> boolean().
-is_admin(#{<<"permissions">> := #{<<"admin">> := true}}) -> true;
-is_admin(_Repo) -> false.
+-spec is_admin(Repo::gadget_repos:repo()) -> boolean().
+is_admin(Repo) ->
+  gadget_repos:admin(Repo) =:= true.
 
 %% @doc is this repository language supported by gadget?
--spec is_supported(Repo::map(), Cred::egithub:credentials()) ->
-  {true, map()} | boolean().
-is_supported(#{<<"language">> := null} = Repo, _Cred) ->
-  {true, Repo#{<<"languages">> => []}};
-is_supported(#{<<"language">> := Language} = Repo, Cred) ->
-  {ok, Tools} = application:get_env(gadget, webhooks),
-  ToolsLangs = lists:foldl(fun(#{languages := Langs}, Acc) ->
-                             Acc ++ Langs
-                           end,
-                           [],
-                           maps:values(Tools)),
-  % Remove repeated values
-  SupportedLangs = lists:usort(ToolsLangs),
-  case lists:member(Language, SupportedLangs) of
-    true ->
-      {true, Repo#{<<"languages">> => [Language]}};
-    false ->
-      languages_intersect(Repo, SupportedLangs, Cred)
+-spec is_supported(Repo::gadget_repos:repo()) ->
+  {true, gadget_repos:repo()} | boolean().
+is_supported(Repo) ->
+  case gadget_repos:language(Repo) of
+    null ->
+      {true, Repo};
+    <<"null">> ->
+      {true, Repo};
+    Language ->
+      {ok, Tools} = application:get_env(gadget, webhooks),
+      ToolsLangs = lists:foldl(fun(#{languages := Langs}, Acc) ->
+                                 Acc ++ Langs
+                               end,
+                               [],
+                               maps:values(Tools)),
+      % Remove repeated values
+      SupportedLangs = lists:usort(ToolsLangs),
+      case lists:member(Language, SupportedLangs) of
+        true ->
+          {true, gadget_repos:languages(Repo, [Language])};
+        false ->
+          languages_intersect(Repo, SupportedLangs)
+      end
   end.
 
 %% @doc make sure that there is a directory where to clone the repository
@@ -210,7 +221,10 @@ rebar3_command_path(RepoDir) ->
   Rebar3Included = exists_file_in_repo(RepoDir, "rebar3"),
   case Rebar3Included of
     true -> filename:join(RepoDir, "rebar3");
-    false -> filename:absname("deps/rebar/rebar3")
+    false ->
+      Rebar3Path = run_command(["which rebar3"]),
+      % Remove new line character
+      string:substr(Rebar3Path, 1, length(Rebar3Path) - 1)
   end.
 
 -spec default_verbosity(makefile | rebar | rebar3) -> string().
@@ -355,7 +369,8 @@ status_details_url(Tool, PrNumber, Id) ->
 
 -spec save_status_log(atom(), string(), string(), integer()) -> string().
 save_status_log(Tool, Lines, Repo, PrNumber) ->
-  #{id := Id} = gadget_logs_repo:create(Tool, Repo, PrNumber, Lines),
+  Log = gadget_logs_repo:create(Tool, Repo, PrNumber, Lines),
+  Id = gadget_logs:id(Log),
   status_details_url(Tool, PrNumber, Id).
 
 -spec report_error(atom(), list(), string(), integer(), string(), integer()) ->
@@ -382,13 +397,14 @@ report_error( Tool, [#{commit_id := CommitId} | _] = Messages, Repo, ExitStatus
                          GithubFiles::[egithub_webhook:file()],
                          RepoName::string(),
                          Number::integer()) ->
-  {error, {failed, integer()}} |
   {error, {failed, integer()}, string()} |
   {ok, [map()], string()}.
 catch_error_source(Output, ExitStatus, Tool, GithubFiles, RepoName, Number) ->
   Lines = output_to_lines(Output),
   case error_source(Lines, Tool) of
-    unknown -> {error, {failed, ExitStatus}};
+    unknown ->
+      DetailsUrl = save_status_log(Tool, Output, RepoName, Number),
+      {error, {failed, ExitStatus}, DetailsUrl};
     Tool ->
       Comments = extract_errors(Lines),
       ToolName = capitalize(atom_to_binary(Tool, utf8)),
@@ -489,24 +505,36 @@ build_tool_type(RepoDir) ->
 exists_file_in_repo(RepoDir, FileName) ->
   filelib:is_file(filename:join(RepoDir, FileName)).
 
+-spec get_username(User::map()) ->
+  binary().
+get_username(User) ->
+  Name = maps:get(<<"name">>, User, null),
+  case Name of
+    null -> maps:get(<<"login">>, User);
+    Name1 -> Name1
+  end.
+
+-spec now_datetime() ->
+  gadget_repos:datetime().
+now_datetime() ->
+  calendar:universal_time().
+
 %% =============================================================================
 %% Private
 %% =============================================================================
 
--spec languages_intersect(Repo::map(),
-                          SupportedLangs::[binary()],
-                          Cred::egithub:credentials()) ->
-  boolean().
-languages_intersect(Repo, SupportedLangs, Cred) ->
-  RepoLangs = repo_langs(Repo, Cred),
+-spec languages_intersect(Repo::gadget_repos:repo(),
+                          SupportedLangs::gadget_repos:languages()) ->
+  {true, gadget_repos:repo()} | false.
+languages_intersect(Repo, SupportedLangs) ->
+  RepoLangs = repo_langs(Repo),
   case RepoLangs -- (RepoLangs -- SupportedLangs) of
     [] -> false;
-    Langs -> {true, Repo#{<<"languages">> => Langs}}
+    Langs -> {true, gadget_repos:languages(Repo, Langs)}
   end.
 
--spec repo_langs(Repo::map(), Cred::egithub:credentials()) ->
-  [binary()].
-repo_langs(Repo, Cred) ->
-  FullName = maps:get(<<"full_name">>, Repo),
-  {ok, LanguagesMap} = egithub:languages(Cred, FullName),
-  maps:keys(LanguagesMap).
+-spec repo_langs(Repo::gadget_repos:repo()) ->
+  gadget_repos:languages().
+repo_langs(Repo) ->
+  RepoId = gadget_repos:id(Repo),
+  gadget_repos_repo:languages(RepoId).

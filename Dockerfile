@@ -55,6 +55,11 @@ COPY build/install_quickcheck.sh .
 COPY build/install_quickcheck.escript /tmp/
 RUN ./install_quickcheck.sh
 
+#INSTALL Rebar3
+RUN wget https://s3.amazonaws.com/rebar3/rebar3
+RUN mv rebar3 /usr/local/bin
+RUN chmod +x /usr/local/bin/rebar3
+
 #INSTALL LEWIS
 RUN mkdir workspace
 WORKDIR /workspace
@@ -74,7 +79,7 @@ RUN      mkdir -p /gadget/dump
 COPY     ssh/* /root/.ssh/
 
 
-RUN make
+RUN rebar3 compile
 COPY build/sys.config /gadget/config/app.config
 COPY build/run.sh /etc/sv/gadget/run
 COPY build/finish.sh /etc/sv/gadget/finish

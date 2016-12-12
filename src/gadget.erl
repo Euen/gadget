@@ -86,7 +86,7 @@ start() ->
   application:ensure_all_started(gadget).
 
 %% @doc runs a particular webhook on a PR
--spec webhook(binary(), map()) -> ok | {error, term()}.
+-spec webhook(binary(), egithub_webhook:request()) -> ok | {error, term()}.
 webhook(ToolName, RequestMap) ->
   #{ mod := Mod
    , tool := Tool
@@ -95,17 +95,17 @@ webhook(ToolName, RequestMap) ->
 
   Repo = get_repo_name(RequestMap),
   Cred = github_credentials(),
-  case gadget_repos_repo:fetch(Repo, Tool) of
+  case gadget_repo_tools_repo:fetch(Repo, Tool) of
     notfound ->
       egithub_webhook:event(Mod, Cred, RequestMap);
     GadgetRepo ->
-      Token = gadget_repos:token(GadgetRepo),
+      Token = gadget_repo_tools:token(GadgetRepo),
       StatusCred = egithub:oauth(Token),
       Args = [Mod, StatusCred, atom_to_list(Tool), Context, Cred, RequestMap],
       cxy_ctl:execute_task(webhook, egithub_webhook, event, Args)
   end.
 
--spec get_repo_name(map()) -> string().
+-spec get_repo_name(map()) -> binary().
 get_repo_name(#{body := Body}) ->
   EventData = jiffy:decode(Body, [return_maps]),
   #{<<"repository">> := Repository} = EventData,

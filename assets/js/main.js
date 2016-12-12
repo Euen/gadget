@@ -47,8 +47,23 @@ $(function() {
     $("input[type=radio][name=filter]").on('change', function() {
         $(this).parent().submit();
     });
+
+    // Sync repositories list
+    $("button#sync_repos").on('click', function() {
+        $("input#sync").val("1");
+        $("form#filter_and_sync_repos").submit();
+    });
 });
 
+$(window).load(function() {
+    var qs = location.search;
+    if (qs.indexOf("sync=1") !== -1) {
+        // Avoid to synchronize repos again when the user refresh the page
+        // right after a synchronization call.
+        $("input#sync").val("");
+        $("form#filter_and_sync_repos").submit();
+    }
+});
 
 function qs(key) {
     key = key.replace(/[*+?^$.\[\]{}()|\\\/]/g, "\\$&");

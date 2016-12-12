@@ -21,3 +21,6 @@ Mnesia*
 elvis
 _build/
 rebar.lock
+ssh/
+compile_commands.json
+gadget_internal_*_plt

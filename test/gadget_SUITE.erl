@@ -17,6 +17,11 @@
         , valid_organization_payload_test/1
         , invalid_organization_payload_test/1]).
 -export([test_lewis/1]).
+-export([github_fail_with_compiler/1]).
+-export([github_fail_with_dialyzer/1]).
+-export([github_fail_with_elvis/1]).
+-export([github_fail_with_lewis/1]).
+-export([github_fail_with_xref/1]).
 
 -type config() :: [{atom(), term()}].
 
@@ -62,9 +67,16 @@ end_per_suite(Config) ->
 -spec init_per_testcase(TestCase::atom(), Config::config()) -> config().
 init_per_testcase(valid_organization_repositories_test, Config) ->
   ok = meck:new(egithub, [passthrough]),
+  ok = meck:new(gadget_core, [passthrough]),
   ok = meck:expect(egithub, orgs, fun egithub_orgs/1),
+  ok = meck:expect(egithub, all_repos, fun egithub_all_repos/2),
   ok = meck:expect(egithub, all_org_repos, fun egithub_all_org_repos/3),
   ok = meck:expect(egithub, hooks, fun egithub_hooks/2),
+  ok = meck:expect( gadget_core
+                  , sync_repositories
+                  , fun gadget_core_sync_repositories/2
+                  ),
+  ok = meck:expect(gadget_repos, full_name, fun gadget_repos_full_name/1),
   Config;
 init_per_testcase(_TestCase, Config) ->
   Config.
@@ -74,6 +86,7 @@ init_per_testcase(_TestCase, Config) ->
 -spec end_per_testcase(TestCase::atom(), Config::config()) -> config().
 end_per_testcase(valid_organization_repositories_test, Config) ->
   ok = meck:unload(egithub),
+  ok = meck:unload(gadget_core),
   Config;
 end_per_testcase(_TestCase, Config) ->
   Config.
@@ -128,8 +141,10 @@ basic_test(Webhook, Config) ->
   Header =
     #{  <<"Content-Type">> => <<"application/json">>
       , <<"x-github-event">> =>  <<"ping">>},
-  Token = gadget_test_utils:get_github_client_secret(),
-  _ = gadget_repos_repo:register("gadget-tester/user-repo", Webhook, Token),
+  Token = list_to_binary(gadget_test_utils:get_github_client_secret()),
+  _ = gadget_repo_tools_repo:register( <<"gadget-tester/user-repo">>
+                                     , Webhook
+                                     , Token),
   {ok, JsonBody} =
     file:read_file("../../test/github_payloads/initial-payload.json"),
   {ok, Response} =
@@ -144,8 +159,10 @@ basic_test(Webhook, Config) ->
 
 -spec valid_organization_repositories_test(Config::config()) -> config().
 valid_organization_repositories_test(Config) ->
-  [Repositories | _] = gadget_core:repositories({'oauth', "mycredentials"}, <<"all">>),
-  <<"inaka/harry">> = proplists:get_value(full_name, Repositories),
+  User = gadget_users:new(123, <<"test-user">>, []),
+  [Repo | _] =
+    gadget_core:sync_repositories( {'oauth', "mycredentials"}, User),
+  <<"inaka/harry">> = gadget_repos:full_name(Repo),
   Config.
 
 -spec valid_organization_payload_test(Config::config()) -> config().
@@ -172,15 +189,42 @@ invalid_organization_payload_test(Config) ->
   #{ status_code := 403, body := <<"Event not  processed.">>} = Response,
   Config.
 
+-spec github_fail_with_compiler(config()) -> ok.
+github_fail_with_compiler(_Config) ->
+  github_fail_with_tool(<<"compiler">>).
+
+-spec github_fail_with_dialyzer(config()) -> ok.
+github_fail_with_dialyzer(_Config) ->
+  github_fail_with_tool(<<"dialyzer">>).
+
+-spec github_fail_with_elvis(config()) -> ok.
+github_fail_with_elvis(_Config) ->
+  github_fail_with_tool(<<"elvis">>).
+
+-spec github_fail_with_lewis(config()) -> ok.
+github_fail_with_lewis(_Config) ->
+  github_fail_with_tool(<<"lewis">>).
+
+-spec github_fail_with_xref(config()) -> ok.
+github_fail_with_xref(_Config) ->
+  github_fail_with_tool(<<"xref">>).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PRIVATE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec egithub_orgs(Cred::tuple()) -> {ok, [map()]}.
+
+-spec egithub_orgs(Cred::tuple()) ->
+  {ok, [map()]}.
 egithub_orgs(_Cred) ->
   {ok, [Orgs | _]} = file:consult("../../test/meck_data/egithub__orgs.txt"),
   {ok, Orgs}.
 
--spec egithub_all_org_repos(Cred::tuple, OrgName::binary(), Opts::map()) ->
+-spec egithub_all_repos(Cred::tuple(), Opts::map()) ->
+  {ok, []}.
+egithub_all_repos(_Cred, _Opts) ->
+  {ok, []}.
+
+-spec egithub_all_org_repos(Cred::tuple(), OrgName::binary(), Opts::map()) ->
   {ok, [map()]}.
 egithub_all_org_repos(_Cred, <<"inaka">>, _Opts) ->
   {ok, [OrgRepos | _]} =
@@ -188,7 +232,64 @@ egithub_all_org_repos(_Cred, <<"inaka">>, _Opts) ->
   {ok, OrgRepos};
 egithub_all_org_repos(_Cred, _OrgName, _Opts) -> {ok, []}.
 
--spec egithub_hooks(Cred::tuple(), FullName::binary()) -> {ok, [map()]}.
+-spec egithub_hooks(Cred::tuple(), FullName::binary()) ->
+  {ok, [map()]}.
 egithub_hooks(_Cred, _FullName) ->
   {ok, [Hooks | _]} = file:consult("../../test/meck_data/egithub__hooks.txt"),
   {ok, Hooks}.
+
+-spec gadget_core_sync_repositories(Cred::tuple(), User::map()) ->
+  [gadget_repos:repo()].
+gadget_core_sync_repositories(Cred, _User) ->
+  Opts = #{type => <<"owner">>, per_page => 100},
+  {ok, Repos} = egithub:all_repos(Cred, Opts),
+  {ok, Orgs} = egithub:orgs(Cred),
+
+  OrgsOpts = Opts#{type => <<"public">>},
+  OrgReposFun =
+    fun(#{<<"login">> := OrgName}) ->
+      {ok, OrgRepos} = egithub:all_org_repos(Cred, OrgName, OrgsOpts),
+      OrgRepos
+    end,
+  AllOrgsRepos = lists:flatmap(OrgReposFun, Orgs),
+
+  % Get all the private repositories the user is an admin of.
+  [Repo ||
+   #{<<"private">> := true,
+     <<"permissions">> := #{<<"admin">> := true}} = Repo <-
+   Repos ++ AllOrgsRepos].
+
+-spec gadget_repos_full_name(Repo::map()) ->
+  binary().
+gadget_repos_full_name(Repo) ->
+  maps:get(<<"full_name">>, Repo).
+
+% Emulate a 404 response of GitHub and verify that exist a status details link
+-spec github_fail_with_tool(binary()) -> ok.
+github_fail_with_tool(ToolName) ->
+  #{mod := Tool} = gadget_utils:webhook_info(ToolName),
+  {ok, [RequestMap]} = file:consult("../../test/request_map.txt"),
+  meck:new(egithub, [passthrough]),
+  meck:new(Tool, [passthrough]),
+
+  {ok, GithubFiles} = file:consult("../../test/github_files.txt"),
+  PullReqFiles = fun(_, _, _) -> {ok, GithubFiles} end,
+  meck:expect(egithub, pull_req_files, PullReqFiles),
+
+  meck:expect(Tool, handle_pull_request, fun fail/3),
+
+  try
+    ok = gadget:webhook(ToolName, RequestMap)
+  catch
+    _:{badmatch,{error,{404, _, _}}} -> ok
+  after
+    meck:unload(egithub),
+    meck:unload(Tool)
+  end.
+
+-spec fail( egithub:credentials()
+          , egithub_webhook:req_data()
+          , [egithub_webhook:file()]) -> no_return().
+fail(_, _, _) ->
+  {ok, [Error]} = file:consult("../../test/event_error.txt"),
+  throw(Error).
