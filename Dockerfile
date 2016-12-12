@@ -28,11 +28,16 @@ RUN dpkg --add-architecture i386 && \
         openssh-server && \
     apt-get clean
 
-# DOWNLOAD AND UNTAR SDK
-ENV ANDROID_SDK_URL http://dl.google.com/android/android-sdk_r24.3.4-linux.tgz
-RUN curl -L "${ANDROID_SDK_URL}" | tar --no-same-owner -xz -C /usr/local
+# DOWNLOAD & INSTALL SDK
+ENV ANDROID_SDK_URL https://dl.google.com/android/repository/tools_r25.2.3-linux.zip
 ENV ANDROID_HOME /usr/local/android-sdk-linux
 ENV ANDROID_SDK /usr/local/android-sdk-linux
+
+RUN mkdir -p ${ANDROID_HOME} &&\
+    curl -L "${ANDROID_SDK_URL}" > /tmp/android-sdk.zip &&\
+    unzip /tmp/android-sdk.zip -d ${ANDROID_HOME} &&\
+    rm -rf /tmp/*
+
 ENV PATH ${ANDROID_HOME}/tools:$ANDROID_HOME/platform-tools:$PATH
 
 # SUPPORT GRADLE
