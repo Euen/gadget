@@ -44,7 +44,6 @@ ENV PATH ${ANDROID_HOME}/tools:$ANDROID_HOME/platform-tools:$PATH
 ENV TERM dumb
 ENV JAVA_OPTS -Xms256m -Xmx512m
 
-COPY build/android_sdk_components.env /android_sdk_components.env
 RUN echo y | android update sdk --no-ui --all"
 
 #INSTALL ERLANG
