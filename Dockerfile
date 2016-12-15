@@ -45,7 +45,7 @@ ENV TERM dumb
 ENV JAVA_OPTS -Xms256m -Xmx512m
 
 COPY build/android_sdk_components.env /android_sdk_components.env
-RUN echo y | android update sdk --no-ui --all --filter "$(cat /android_sdk_components.env)"
+RUN echo y | android update sdk --no-ui --all"
 
 #INSTALL ERLANG
 COPY build/install_erlang.sh .
