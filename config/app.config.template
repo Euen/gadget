@@ -58,7 +58,7 @@
        }
     },
     {pr_actions, [<<"opened">>, <<"reopened">>, <<"synchronize">>]},
-    {valid_organizations, [<<"inaka">>, <<"nanoscopia">>, <<"esl">>]},
+    {valid_organizations, [<<"inaka">>, <<"nanoscopia">>, <<"esl">>, <<"eventene">>]},
     %% Basic Auth
     {github_user, "github-user"},
     {github_password, "github-password"},
