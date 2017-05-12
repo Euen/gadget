@@ -5,7 +5,6 @@ ENV DEBIAN_FRONTEND noninteractive
 # INSTALL LEWIS DEPENDENCIES
 RUN dpkg --add-architecture i386 && \
     apt-get update && \
-    apt-get -y dist-upgrade && \
     apt-get install -yq libstdc++6:i386 zlib1g:i386 libncurses5:i386 --no-install-recommends && \
     apt-get -y install --reinstall locales && \
     dpkg-reconfigure locales && \
@@ -26,7 +25,7 @@ RUN dpkg --add-architecture i386 && \
         libexpat1-dev \
         autoconf \
         openssh-server && \
-    apt-get clean
+        apt-get clean
 
 # DOWNLOAD & INSTALL SDK
 ENV ANDROID_SDK_URL https://dl.google.com/android/repository/tools_r25.2.3-linux.zip
@@ -51,32 +50,34 @@ COPY build/install_erlang.sh .
 RUN ./install_erlang.sh
 
 #INSTALL Rebar3
-RUN wget https://s3.amazonaws.com/rebar3/rebar3
-RUN mv rebar3 /usr/local/bin
-RUN chmod +x /usr/local/bin/rebar3
+RUN     wget https://s3.amazonaws.com/rebar3/rebar3 && \
+        mv rebar3 /usr/local/bin && \
+        chmod +x /usr/local/bin/rebar3
 
 #INSTALL LEWIS
 RUN mkdir workspace
 WORKDIR /workspace
 
-RUN git clone https://github.com/inaka/lewis.git
-RUN cd lewis && ./gradlew build
-RUN cd lewis && ./gradlew install
+RUN git clone https://github.com/inaka/lewis.git && \
+        cd lewis && \
+        ./gradlew build && \
+        ./gradlew install
 
 #SETUP GADGET
-RUN      mkdir -p /etc/sv/gadget
-RUN      mkdir -p /etc/sv/gadget/supervise
-RUN      ln -s /etc/sv/gadget /etc/service/gadget
-RUN      mkdir /gadget
+RUN     mkdir -p /etc/sv/gadget && \
+        mkdir -p /etc/sv/gadget/supervise && \
+        ln -s /etc/sv/gadget /etc/service/gadget && \
+        mkdir -p /gadget/dump
+
 WORKDIR  /gadget
 COPY     . /gadget
-RUN      mkdir -p /gadget/dump
 COPY     ssh/* /root/.ssh/
 
 
 RUN rm -rf _build
-RUN rebar3 clean
-RUN rebar3 compile
+RUN     rebar3 clean && \
+        rebar3 compile
+
 COPY build/sys.config /gadget/config/app.config
 COPY build/run.sh /etc/sv/gadget/run
 COPY build/finish.sh /etc/sv/gadget/finish
