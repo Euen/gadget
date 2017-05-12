@@ -59,8 +59,9 @@ RUN mkdir workspace
 WORKDIR /workspace
 
 RUN git clone https://github.com/inaka/lewis.git && \
-        cd lewis && ./gradlew build && \
-        cd lewis && ./gradlew install
+        cd lewis && \
+        ./gradlew build && \
+        ./gradlew install
 
 #SETUP GADGET
 RUN     mkdir -p /etc/sv/gadget && \
