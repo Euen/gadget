@@ -16,3 +16,9 @@ build: ## Build docker image
 publish: ## Publish docker image to the provided container registry
 	$(DOCKER) build $(DKR_BUILD_OPTS) .
 	$(DOCKER) push $(DKR_REGISTRY)/$(DKR_IMAGE):$(DKR_TAG)
+
+start: stop
+	$(COMPOSE) up -d
+
+stop:
+	$(COMPOSE) down

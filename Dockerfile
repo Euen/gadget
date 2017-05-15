@@ -49,6 +49,12 @@ RUN echo y | android update sdk --no-ui --all
 COPY build/install_erlang.sh .
 RUN ./install_erlang.sh
 
+# Install quickcheck
+COPY build/install_quickcheck.sh .
+COPY build/install_quickcheck.escript /tmp/
+RUN ./install_quickcheck.sh
+
+
 #INSTALL Rebar3
 RUN     wget https://s3.amazonaws.com/rebar3/rebar3 && \
         mv rebar3 /usr/local/bin && \

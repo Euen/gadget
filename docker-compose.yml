@@ -4,3 +4,6 @@ services:
       build: .
       command: /usr/sbin/runsvdir-start
       container_name: gadget-internal_web
+      container_name: gadget_web
+      ports:
+        - "8082:8082"
