@@ -58,10 +58,10 @@
        }
     },
     {pr_actions, [<<"opened">>, <<"reopened">>, <<"synchronize">>]},
-    {valid_organizations, [<<"inaka">>, <<"nanoscopia">>, <<"esl">>, <<"eventene">>]},
+    {valid_organizations, [<<"inaka">>, <<"nanoscopia">>, <<"esl">>]},
     %% Basic Auth
-    {github_user, "github-user"},
-    {github_password, "github-password"},
+    {github_user, "gadget-tester"},
+    {github_password, "g0g0gadget"},
     {android_sdk_path, "/Users/gadget/Library/Android/sdk/"},
     {android_ndk_path, "/Users/gadget/Library/Android/sdk/ndk-bundle"}
    ]
