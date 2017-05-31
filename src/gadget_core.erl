@@ -58,14 +58,21 @@ unregister(Repo, Tool, Token) ->
          } <- EnabledTools
      , ToolName == Tool
      ],
-  ok =
-    case HIds of
-      [] -> ok;
-      [Id] ->
-        ok = egithub:delete_webhook(Cred, Repo, Id),
-        _ = gadget_repo_hooks_repo:unregister(Id),
-        ok
-    end,
+  case HIds of
+    [] -> ok;
+    [Id] ->
+      Msg = "IF THERE IS A 404 ERROR BELOW THIS MESSAGE, IGNORE IT, IT IS "
+            "BECAUSE GADGET TRIED TO DELETE A NON-EXISTING WEBHOOK. issue#292",
+      _ = lager:info(Msg, []),
+      case egithub:delete_webhook(Cred, Repo, Id) of
+        ok -> ok;
+        % For the times when the webhook has been deleted manually using
+        % the repo settings
+        {error, {404, _, _}} -> ok
+      end,
+      _ = gadget_repo_hooks_repo:unregister(Id),
+      ok
+  end,
   gadget_repo_tools_repo:unregister(Repo, Tool).
 
 -spec sync_repositories(Cred::egithub:credentials(),
@@ -216,6 +223,14 @@ sync_repo_languages(Cred, Repo) ->
 sync_repo_hooks(Cred, Repo) ->
   RepoId = gadget_repos:id(Repo),
   FullName = gadget_repos:full_name(Repo),
+  % Remove all the existing hooks for the given repo_id
+  _ =
+    lists:foreach(
+      fun(RepoHook) ->
+        gadget_repo_hooks_repo:unregister(gadget_repo_hooks:id(RepoHook))
+      end,
+      gadget_repo_hooks_repo:fetch_by_repo_id(RepoId)
+     ),
   case egithub:hooks(Cred, FullName) of
     {ok, HooksResult} ->
       % Store and return the list of stored Hooks for the given repo
