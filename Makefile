@@ -30,4 +30,4 @@ attach:
        $(DOCKER) exec -ti `$(DOCKER) ps | grep gadget_web | cut -d " " -f 1 ` bash
 
 clean:
-       rm -rf _build/*
+       rm -rf _build/* compile_commands.json rebar.lock

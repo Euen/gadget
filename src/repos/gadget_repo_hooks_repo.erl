@@ -7,7 +7,7 @@
          fetch/1,
          fetch_by_repo_id/1]).
 
-%% @doc adds a repo to the database
+%% @doc adds a repo hook to the database
 -spec register(Id::gadget_repo_hooks:id(),
                RepoId::gadget_repo_hooks:repo_id(),
                Url::gadget_repo_hooks:url()) ->
@@ -22,18 +22,18 @@ register(Id, RepoId, Url) ->
     )
   ).
 
-%% @doc removes a repo from the database
+%% @doc removes a repo hook from the database
 -spec unregister(Id::gadget_repo_hooks:id()) ->
   non_neg_integer().
 unregister(Id) ->
   sumo:delete_by(gadget_repo_hooks, [{id, Id}]).
 
-%% @doc returns all registered repos
+%% @doc returns all registered repo hooks
 -spec all() ->
   [gadget_repo_hooks:repo_hook()].
 all() -> sumo:find_all(gadget_repo_hooks).
 
-%% @doc returns a particular repo, if found
+%% @doc returns a particular repo hook (if any)
 -spec fetch(Id::gadget_repo_hooks:id()) ->
   notfound | gadget_repo_hooks:repo_hook().
 fetch(Id) ->
