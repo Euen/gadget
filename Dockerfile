@@ -74,7 +74,7 @@ COPY     . /gadget
 COPY     ssh/* /root/.ssh/
 
 
-RUN rm -rf _build
+RUN rm -rf _build compile_commands.json rebar.lock
 RUN     rebar3 clean && \
         rebar3 compile
 
