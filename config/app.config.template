@@ -58,7 +58,7 @@
        }
     },
     {pr_actions, [<<"opened">>, <<"reopened">>, <<"synchronize">>]},
-    {valid_organizations, [<<"inaka">>, <<"nanoscopia">>, <<"esl">>]},
+    {valid_organizations, [<<"inaka">>, <<"nanoscopia">>, <<"esl">>, <<"Orbit-Group-Stamford">>]},
     %% Basic Auth
     {github_user, "gadget-tester"},
     {github_password, "g0g0gadget"},
